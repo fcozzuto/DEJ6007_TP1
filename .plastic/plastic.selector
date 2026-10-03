@@ -1,0 +1,4 @@
+repository "DEJ6007_TP1_FabioCozzuto 2026-10-02_10-01-00/DEJ6007_TP1_FabioCozzuto@3573449078477@cloud"
+  path "/"
+    br "/main"
+    co "/main"
