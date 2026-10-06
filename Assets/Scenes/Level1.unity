@@ -272,6 +272,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 6953be7d185477e4d88f29441b1baa6f, type: 3}
   m_PrefabInstance: {fileID: 1955954452}
   m_PrefabAsset: {fileID: 0}
+--- !u!95 &220317031 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 6953be7d185477e4d88f29441b1baa6f, type: 3}
+  m_PrefabInstance: {fileID: 1955954452}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -1570,6 +1575,9 @@ MonoBehaviour:
   runSpeed: 8
   jumpHeight: 2
   gravity: -50
+  animator: {fileID: 220317031}
+  characterVisual: {fileID: 220317030}
+  turnSpeed: 12
 --- !u!136 &1971881587
 CapsuleCollider:
   m_ObjectHideFlags: 0
