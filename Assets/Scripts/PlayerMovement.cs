@@ -97,4 +97,19 @@ public class PlayerMovement : MonoBehaviour
         animator.CrossFadeInFixedTime(stateName, 0.15f);
         currentAnimation = stateName;
     }
+
+    public void RespawnAt(Vector3 position)
+    {
+        // Temporarily release the controller while teleporting.
+        controller.enabled = false;
+
+        transform.position = position;
+        Physics.SyncTransforms();
+
+        // Start the new life without the previous fall's momentum.
+        verticalSpeed = 0f;
+        jumpsUsed = 0;
+
+        controller.enabled = true;
+    }
 }
