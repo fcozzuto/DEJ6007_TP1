@@ -78,7 +78,8 @@ public class PlayerMovement : MonoBehaviour
         verticalSpeed += gravity * Time.deltaTime;
         movement.y = verticalSpeed;
 
-        controller.Move(movement * Time.deltaTime);
+        if (controller.enabled == true)
+            controller.Move(movement * Time.deltaTime);
 
         // Stop upward speed when hitting the underside of a platform.
         if ((controller.collisionFlags & CollisionFlags.Above) != 0
@@ -110,6 +111,15 @@ public class PlayerMovement : MonoBehaviour
         verticalSpeed = 0f;
         jumpsUsed = 0;
 
+        controller.enabled = true;
+    }
+
+    public void PausePlayerController()
+    {
+        controller.enabled = false;
+    }
+    public void ResumePlayerController()
+    {
         controller.enabled = true;
     }
 }

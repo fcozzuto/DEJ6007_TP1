@@ -2,20 +2,22 @@ using UnityEngine;
 
 public class SmoothFollow : MonoBehaviour
 {
-    /*public Transform target;
-    public Vector3 offset;
-    public float smoothSpeed = 5f;
-
-    void LateUpdate()
-    {
-        Vector3 desired = target.position + offset;
-        transform.position = Vector3.Lerp(transform.position, desired, smoothSpeed * Time.deltaTime);
-    }*/
     public Transform target;
+    public Transform ragdollTarget;
+
     public Vector3 offset;
     public float smoothSpeed = 5f;
 
     private Quaternion rotationOffset;
+    private ZoomBehavior zoomBehavior;
+
+    private bool wasDead;
+    private Vector3 deathPositionOffset;
+
+    private void Awake()
+    {
+        zoomBehavior = GetComponent<ZoomBehavior>();
+    }
 
     private void Start()
     {
@@ -30,11 +32,30 @@ public class SmoothFollow : MonoBehaviour
     {
         if (target == null) return;
 
+        bool isDead = zoomBehavior != null && zoomBehavior.playerIsDead;
+
+        if (isDead && !wasDead && ragdollTarget != null)
+        {
+            deathPositionOffset =
+                ragdollTarget.position - target.position;
+        }
+
+        wasDead = isDead;
+
+        Vector3 followPosition = target.position;
+
+        if (isDead && ragdollTarget != null)
+        {
+            // Follow the body's displacement without copying its rotation.
+            followPosition =
+                ragdollTarget.position - deathPositionOffset;
+        }
+
         float blend = smoothSpeed * Time.deltaTime;
 
         // Rotate the camera's offset with the player.
         Vector3 desiredPosition =
-            target.position + target.TransformDirection(offset);
+            followPosition + target.TransformDirection(offset);
 
         Quaternion desiredRotation =
             target.rotation * rotationOffset;

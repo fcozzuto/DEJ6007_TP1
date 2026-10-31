@@ -42,6 +42,16 @@ public class GameManager : MonoBehaviour
             Debug.Log($"Respawning player at checkpoint {closestCheckpoint.name}");
             Player.GetComponent<PlayerMovement>().RespawnAt(
                 closestCheckpoint.transform.position);
+            Player.GetComponentInChildren<Animator>().enabled = true;
+            Player.GetComponent<PlayerMovement>().ResumePlayerController();
+            ZoomBehavior zoomBehavior = Camera.main.GetComponent<ZoomBehavior>();
+            if (zoomBehavior != null)
+                zoomBehavior.playerIsDead = false;
         }
+    }
+
+    public void RespawnWithDelay(float delay)
+    {
+        Invoke(nameof(RespawnPlayer), delay);
     }
 }
