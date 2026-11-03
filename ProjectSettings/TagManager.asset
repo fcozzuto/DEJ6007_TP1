@@ -6,6 +6,7 @@ TagManager:
   tags:
   - HiddenPlatform
   - RotateCamera
+  - Enemy
   layers:
   - Default
   - TransparentFX
