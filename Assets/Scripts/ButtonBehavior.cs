@@ -21,19 +21,45 @@ public class ButtonBehavior : MonoBehaviour
         {
             Debug.Log("Button pressed!");
             // Move the button down slowly using an animation
-            gameObject.GetComponent<Animator>().SetTrigger("PressButton");
-
-            //transform.position = new Vector3(transform.position.x, transform.position.y - 0.4f, transform.position.z);
-            // Activate the hidden platform
-            GameObject[] hiddenPlatforms = GameObject.FindGameObjectsWithTag("HiddenPlatform");
-            foreach (GameObject hiddenPlatform in hiddenPlatforms)
+            if (this.gameObject.name == "Button Hidden Platforms")
             {
-                Debug.Log("Hidden platform exists!");
-                hiddenPlatform.gameObject.GetComponentInChildren<Renderer>().enabled = true;
-                hiddenPlatform.gameObject.GetComponentInChildren<Collider>().enabled = true;
-                // Disable the button's collider so it can't be pressed again
+                this.gameObject.GetComponent<Animator>().Play("PressButton");
+                // Activate the hidden platforms
+                GameObject[] hiddenPlatforms = GameObject.FindGameObjectsWithTag("HiddenPlatform");
+                foreach (GameObject hiddenPlatform in hiddenPlatforms)
+                {
+                    Debug.Log("Hidden platform exists!");
+                    hiddenPlatform.gameObject.GetComponentInChildren<Renderer>().enabled = true;
+                    hiddenPlatform.gameObject.GetComponentInChildren<Collider>().enabled = true;
+                    // Disable the button's collider so it can't be pressed again
+                }
+                this.gameObject.GetComponentInChildren<Collider>().enabled = false;
             }
-            gameObject.GetComponentInChildren<Collider>().enabled = false;
+            else if (this.gameObject.name == "Button Hidden Door")
+            {
+                this.gameObject.GetComponent<Animator>().Play("PressButton");
+                GameObject fakeWall = GameObject.Find("Fake Wall");
+                if (fakeWall != null)
+                {
+                    Debug.Log("Fake wall exists!");
+                    fakeWall.gameObject.GetComponentInChildren<Animator>().SetTrigger("HiddenDoorFound");
+                    this.gameObject.GetComponentInChildren<Collider>().enabled = false;
+                }
+                else
+                {
+                    Debug.LogWarning("Fake wall not found!");
+                }
+                GameObject fakeBrazier = GameObject.Find("FakeBrazier");
+                if (fakeBrazier != null)
+                {
+                    Debug.Log("Fake brazier exists!");
+                    Destroy(fakeBrazier);
+                }
+                else
+                {
+                    Debug.LogWarning("Fake brazier not found!");
+                }
+            }
         }
     }
 }

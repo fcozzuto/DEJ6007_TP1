@@ -1,10 +1,16 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     [SerializeField] private GameObject[] Checkpoints;
     [SerializeField] private GameObject Player;
+    [SerializeField] private Animator[] heartAnimators = new Animator[3];
+    [SerializeField] private GameObject gameOverUI;
+    [SerializeField] private GameObject victoryUI;
+
+    private int lives = 3;
     void Start()
     {
         
@@ -16,13 +22,14 @@ public class GameManager : MonoBehaviour
         if (Player.transform.position.y < -10f)
         {
             Debug.Log("Player fell below -10, respawning...");
-            RespawnPlayer();
+            RespawnWithDelay(1f); // Call RespawnWithDelay with a 1-second delay
         }
     }
 
     private void RespawnPlayer()
     {
         // Find the closest active checkpoint
+        LoseLife();
         GameObject closestCheckpoint = null;
         float closestDistance = Mathf.Infinity;
         foreach (GameObject checkpoint in Checkpoints)
@@ -52,6 +59,31 @@ public class GameManager : MonoBehaviour
 
     public void RespawnWithDelay(float delay)
     {
+        if (lives <= 1)
+        {
+            LoseLife();
+            gameOverUI.SetActive(true);
+            return;
+        }
+
         Invoke(nameof(RespawnPlayer), delay);
+    }
+
+    private void LoseLife()
+    {
+        if (lives <= 0) return;
+
+        lives--;
+        heartAnimators[lives].SetTrigger("Life Lost");
+    }
+
+    public void RestartLevel()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    public void QuitGame()
+    {
+        Application.Quit();
     }
 }
