@@ -23,7 +23,7 @@ public class ButtonBehavior : MonoBehaviour
             // Move the button down slowly using an animation
             if (this.gameObject.name == "Button Hidden Platforms")
             {
-                this.gameObject.GetComponent<Animator>().Play("PressButton");
+                this.gameObject.GetComponent<Animator>().Play("PressPlatformButton");
                 // Activate the hidden platforms
                 GameObject[] hiddenPlatforms = GameObject.FindGameObjectsWithTag("HiddenPlatform");
                 foreach (GameObject hiddenPlatform in hiddenPlatforms)
@@ -37,7 +37,7 @@ public class ButtonBehavior : MonoBehaviour
             }
             else if (this.gameObject.name == "Button Hidden Door")
             {
-                this.gameObject.GetComponent<Animator>().Play("PressButton");
+                this.gameObject.GetComponent<Animator>().Play("PressHiddenDoorButton");
                 GameObject fakeWall = GameObject.Find("Fake Wall");
                 if (fakeWall != null)
                 {
