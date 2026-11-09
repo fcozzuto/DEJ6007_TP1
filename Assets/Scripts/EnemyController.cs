@@ -1,9 +1,22 @@
-using System;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class EnemyController : MonoBehaviour
 {
+
+    private enum SoldierState
+    {
+        Patrol,
+        Idle,
+        Unsheath,
+        Attack,
+        Sheath
+    }
+
+    [SerializeField, Min(0f)] private float soldierIdleDuration = 0.5f;
+    private SoldierState soldierState = SoldierState.Patrol;
+    private float soldierIdleEndTime;
+    private Animator animator;
+
     private bool playerDetected = false;
     private float enemyPosition;
 
@@ -11,59 +24,121 @@ public class EnemyController : MonoBehaviour
     [SerializeField] private Transform player;
     [SerializeField] private float chaseSpeed = 3f;
     [SerializeField] private float stoppingDistance = 2f;
+    [SerializeField] private FlyingDagger daggerPrefab;
+    [SerializeField] private MeshRenderer heldDagger;
+
+    private bool patrolInterrupted = false;
+    private Vector3 patrolResumePosition;
+    private Quaternion patrolResumeRotation;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         enemyPosition = this.gameObject.transform.position.x;
+        animator = GetComponent<Animator>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        playerDetected = player != null && Vector3.Distance(this.gameObject.transform.position, player.position) <= detectionRange;
-        // Until the player is detected, the enemy will patrol
-        if (!playerDetected)
+        playerDetected = false;
+
+        if (player != null)
         {
-            Patrol();
+            Vector3 offset = player.position - transform.position;
+            offset.y = 0f;
+
+            PlayerMovement playerMovement = player.GetComponent<PlayerMovement>();
+
+            playerDetected = playerMovement != null &&
+                !playerMovement.IsDead &&
+                offset.magnitude <= detectionRange;
+        }
+
+        if (gameObject.name != "Viking")
+        {
+            UpdateSoldier();
+            return;
+        }
+
+        if (playerDetected)
+        {
+            // Save the patrol position and heading once.
+            if (!patrolInterrupted)
+            {
+                patrolResumePosition = transform.position;
+                patrolResumeRotation = transform.rotation;
+                patrolInterrupted = true;
+            }
+
+            ChasePlayer();
+        }
+        else if (patrolInterrupted)
+        {
+            ReturnToPatrol();
         }
         else
         {
-            ChasePlayer();
+            Patrol();
         }
     }
 
     private void ChasePlayer()
     {
-        float offsetX = player.position.x - this.gameObject.transform.position.x;
-        float distanceToWalk = Mathf.Abs(offsetX) - stoppingDistance;
+        Vector3 direction = player.position - transform.position;
+        direction.y = 0f;
+
+        float distance = direction.magnitude;
+
+        // Face the player, including when already close enough to stop.
+        if (distance > 0.001f)
+        {
+            transform.rotation = Quaternion.LookRotation(direction);
+        }
+
+        float distanceToWalk = distance - stoppingDistance;
 
         if (distanceToWalk <= 0.01f)
         {
-            // Stop moving if the player is within the stopping distance
-            this.gameObject.GetComponent<Animator>().Play("Idle");
+            animator.Play("Idle");
             return;
         }
 
-        float facingAngle = offsetX > 0 ? 90f : -90f;
-        this.transform.rotation = Quaternion.Euler(0, facingAngle, 0);
+        animator.Play("Viking Charge");
 
-        if (this.gameObject.name == "Viking")
-        {
-            this.gameObject.GetComponent<Animator>().Play("Viking Charge");
-        }
-        else
-        {
-            this.gameObject.GetComponent<Animator>().Play("Run");
-        }
         float step = Mathf.Min(chaseSpeed * Time.deltaTime, distanceToWalk);
-        this.gameObject.transform.Translate(Vector3.forward * step);
+        transform.Translate(Vector3.forward * step);
+    }
+
+    private void ReturnToPatrol()
+    {
+        Vector3 direction = patrolResumePosition - transform.position;
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude > 0.000001f)
+        {
+            transform.rotation = Quaternion.LookRotation(direction);
+        }
+
+        transform.position = Vector3.MoveTowards(
+            transform.position,
+            patrolResumePosition,
+            2f * Time.deltaTime);
+
+        animator.Play("Walk");
+
+        if (transform.position == patrolResumePosition)
+        {
+            transform.position = patrolResumePosition;
+            transform.rotation = patrolResumeRotation;
+            patrolInterrupted = false;
+        }
     }
 
     private void Patrol()
     {
         // The enemy will patrol by walking forward between two points, and when it reaches one of the points, it will turn around and walk to the other point
         this.gameObject.transform.Translate(Vector3.forward * Time.deltaTime * 2);
-        this.gameObject.GetComponent<Animator>().Play("Walk");
+        animator.Play("Walk");
 
         // If the enemy reaches the end of the patrol path, it will turn around
         if (this.gameObject.transform.position.x <= enemyPosition - 10 && transform.forward.x < 0f)
@@ -77,25 +152,124 @@ public class EnemyController : MonoBehaviour
 
     }
 
-    private void OnCollisionEnter(Collision collision)
+    private void OnTriggerEnter(Collider other)
     {
-        if (collision.gameObject.name == "Player")
+        PlayerMovement playerMovement = other.GetComponentInParent<PlayerMovement>();
+        if (playerMovement == null)
+            return;
+
+        CharacterController playerController =
+            playerMovement.GetComponent<CharacterController>();
+        if (!playerController.enabled)
+            return;
+
+        playerMovement.Die();
+    }
+
+    private void UpdateSoldier()
+    {
+        if (playerDetected && soldierState != SoldierState.Patrol &&
+            soldierState != SoldierState.Sheath)
         {
-            Debug.Log("Player collided with enemy, triggering Ragdoll and then respawn!");
-            PlayerDeath(collision.collider);
+            Vector3 direction = player.position - transform.position;
+            direction.y = 0f;
+            if (direction.sqrMagnitude > 0.000001f)
+                transform.rotation = Quaternion.LookRotation(direction);
+        }
+
+        AnimatorStateInfo animation = animator.GetCurrentAnimatorStateInfo(0);
+
+        switch (soldierState)
+        {
+            case SoldierState.Patrol:
+                if (!playerDetected)
+                {
+                    Patrol();
+                    return;
+                }
+
+                patrolResumeRotation = transform.rotation;
+                soldierIdleEndTime = Time.time + soldierIdleDuration;
+                soldierState = SoldierState.Idle;
+                animator.Play("Base Layer.Idle", 0, 0f);
+                break;
+
+            case SoldierState.Idle:
+                if (!playerDetected)
+                {
+                    ResumeSoldierPatrol();
+                }
+                else if (Time.time >= soldierIdleEndTime)
+                {
+                    soldierState = SoldierState.Unsheath;
+                    animator.Play("Base Layer.Soldier Unsheat Weapon", 0, 0f);
+                }
+                break;
+
+            case SoldierState.Unsheath:
+                if (!animation.IsName("Base Layer.Soldier Unsheat Weapon"))
+                    return;
+
+                if (!playerDetected)
+                {
+                    soldierState = SoldierState.Sheath;
+                    animator.Play("Base Layer.Soldier Sheat Weapon", 0,
+                        1f - Mathf.Clamp01(animation.normalizedTime));
+                }
+                else if (animation.normalizedTime >= 1f)
+                {
+                    soldierState = SoldierState.Attack;
+                    animator.Play("Base Layer.Soldier Attack", 0, 0f);
+                }
+                break;
+
+            case SoldierState.Attack:
+                if (!animation.IsName("Base Layer.Soldier Attack") ||
+                    animation.normalizedTime < 1f)
+                    return;
+
+                if (playerDetected)
+                {
+                    soldierState = SoldierState.Unsheath;
+                    animator.Play("Base Layer.Soldier Unsheat Weapon", 0, 0f);
+                }
+                else
+                {
+                    ResumeSoldierPatrol();
+                }
+                break;
+
+            case SoldierState.Sheath:
+                if (animation.IsName("Base Layer.Soldier Sheat Weapon") &&
+                    animation.normalizedTime >= 1f)
+                    ResumeSoldierPatrol();
+                break;
         }
     }
 
-    private static void PlayerDeath(Collider other)
+    private void ResumeSoldierPatrol()
     {
-        // Call the Ragdoll function on the player and then respawn the player after 3 seconds
-        other.gameObject.GetComponentInChildren<Animator>().enabled = false;
-        other.gameObject.GetComponent<PlayerMovement>().PausePlayerController();
-        ZoomBehavior zoomBehavior = Camera.main.GetComponent<ZoomBehavior>();
-        if (zoomBehavior != null)
-            zoomBehavior.playerIsDead = true;
-        GameObject gameManager = GameObject.Find("GameManager");
-        if (gameManager != null)
-            gameManager.GetComponent<GameManager>().RespawnWithDelay(3f);
+        soldierState = SoldierState.Patrol;
+        transform.rotation = patrolResumeRotation;
+        Patrol();
+    }
+
+    public void ThrowDagger()
+    {
+        if (soldierState != SoldierState.Attack || player == null ||
+            player.GetComponent<PlayerMovement>().IsDead)
+            return;
+
+        Vector3 spawnPosition = heldDagger.bounds.center;
+        Vector3 targetPosition = player.position + Vector3.up;
+        Vector3 direction = targetPosition - spawnPosition;
+
+        if (direction.sqrMagnitude < 0.000001f)
+            return;
+
+        FlyingDagger dagger = Instantiate(
+            daggerPrefab, spawnPosition, Quaternion.LookRotation(direction));
+
+        dagger.Launch(direction, transform);
     }
 }

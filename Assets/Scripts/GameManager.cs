@@ -19,11 +19,10 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Player.transform.position.y < -10f)
-        {
-            Debug.Log("Player fell below -10, respawning...");
-            RespawnWithDelay(1f); // Call RespawnWithDelay with a 1-second delay
-        }
+        PlayerMovement playerMovement = Player.GetComponent<PlayerMovement>();
+
+        if (!playerMovement.IsDead && Player.transform.position.y < -10f)
+            playerMovement.Die(1f);
     }
 
     private void RespawnPlayer()
@@ -48,9 +47,8 @@ public class GameManager : MonoBehaviour
         {
             Debug.Log($"Respawning player at checkpoint {closestCheckpoint.name}");
             Player.GetComponent<PlayerMovement>().RespawnAt(
-                closestCheckpoint.transform.position);
-            Player.GetComponentInChildren<Animator>().enabled = true;
-            Player.GetComponent<PlayerMovement>().ResumePlayerController();
+                closestCheckpoint.transform.position,
+                closestCheckpoint.transform.rotation);
             ZoomBehavior zoomBehavior = Camera.main.GetComponent<ZoomBehavior>();
             if (zoomBehavior != null)
                 zoomBehavior.playerIsDead = false;

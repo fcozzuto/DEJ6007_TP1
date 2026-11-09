@@ -17,15 +17,31 @@ public class PlayerMovement : MonoBehaviour
     private int jumpsUsed;
     private string currentAnimation;
 
+    public bool IsDead { get; private set; }
+    private Quaternion initialRotation;
+
+    private InputAction moveAction;
+    private InputAction jumpAction;
+    private InputAction sprintAction;
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
+        initialRotation = characterVisual.localRotation;
+    }
+
+    private void Start()
+    {
+        var actions = InputSystem.actions;
+        moveAction = actions.FindAction("Player/Move", throwIfNotFound: true);
+        jumpAction = actions.FindAction("Player/Jump", throwIfNotFound: true);
+        sprintAction = actions.FindAction("Player/Sprint", throwIfNotFound: true);
     }
 
     private void Update()
     {
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard == null) return;
+        if (IsDead || !controller.enabled)
+            return;
 
         // Reset jumps after landing. Keep a small downward push.
         if (controller.isGrounded && verticalSpeed <= 0f)
@@ -34,15 +50,11 @@ public class PlayerMovement : MonoBehaviour
             jumpsUsed = 0;
         }
 
-        Vector3 movement = Vector3.zero;
-
-        if (keyboard.aKey.isPressed) movement.x -= 1f;
-        if (keyboard.dKey.isPressed) movement.x += 1f;
-        if (keyboard.sKey.isPressed) movement.z -= 1f;
-        if (keyboard.wKey.isPressed) movement.z += 1f;
-
+        Vector2 input = Vector2.ClampMagnitude(
+            moveAction.ReadValue<Vector2>(), 1f);
+        Vector3 movement = new Vector3(input.x, 0f, input.y);
         bool isMoving = movement.sqrMagnitude > 0f;
-        bool isRunning = keyboard.leftShiftKey.isPressed;
+        bool isRunning = sprintAction.IsPressed();
 
         if (!isMoving)
             PlayAnimation("Idle");
@@ -51,12 +63,9 @@ public class PlayerMovement : MonoBehaviour
         else
             PlayAnimation("Walk");
 
-        // Normalizing prevents faster diagonal movement.
-        float speed = keyboard.leftShiftKey.isPressed ? runSpeed : walkSpeed;
-        //movement = movement.normalized * speed;
-        movement = transform.TransformDirection(movement.normalized) * speed;
+        float speed = isRunning ? runSpeed : walkSpeed;
+        movement = transform.TransformDirection(movement) * speed;
 
-        // Movement is still horizontal here, before gravity is added.
         if (movement.sqrMagnitude > 0.001f)
         {
             Quaternion desiredRotation =
@@ -69,7 +78,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // Each press jumps once, with two jumps allowed before landing.
-        if (keyboard.spaceKey.wasPressedThisFrame && jumpsUsed < 2)
+        if (jumpAction.WasPressedThisFrame() && jumpsUsed < 2)
         {
             verticalSpeed = Mathf.Sqrt(jumpHeight * -2f * gravity);
             jumpsUsed++;
@@ -78,10 +87,9 @@ public class PlayerMovement : MonoBehaviour
         verticalSpeed += gravity * Time.deltaTime;
         movement.y = verticalSpeed;
 
-        if (controller.enabled == true)
+        if (controller.enabled)
             controller.Move(movement * Time.deltaTime);
 
-        // Stop upward speed when hitting the underside of a platform.
         if ((controller.collisionFlags & CollisionFlags.Above) != 0
             && verticalSpeed > 0f)
         {
@@ -99,19 +107,24 @@ public class PlayerMovement : MonoBehaviour
         currentAnimation = stateName;
     }
 
-    public void RespawnAt(Vector3 position)
+    public void RespawnAt(Vector3 position, Quaternion facingRotation)
     {
-        // Temporarily release the controller while teleporting.
-        controller.enabled = false;
+        transform.SetPositionAndRotation(
+        position,
+        facingRotation * Quaternion.Inverse(initialRotation));
 
-        transform.position = position;
-        Physics.SyncTransforms();
+        characterVisual.rotation = facingRotation;
+
+        Physics.SyncTransforms(); // Ensure the CharacterController is in sync with the new position
 
         // Start the new life without the previous fall's momentum.
         verticalSpeed = 0f;
         jumpsUsed = 0;
+        currentAnimation = null;
+        IsDead = false;
 
-        controller.enabled = true;
+        ResumePlayerController();
+        animator.enabled = true;
     }
 
     public void PausePlayerController()
@@ -120,6 +133,27 @@ public class PlayerMovement : MonoBehaviour
     }
     public void ResumePlayerController()
     {
-        controller.enabled = true;
+        if (!IsDead)
+        {
+            controller.enabled = true;
+        }
+    }
+
+    public void Die(float respawnDelay = 3f)
+    {
+        if (IsDead)
+            return;
+
+        IsDead = true;
+        animator.enabled = false;
+        PausePlayerController();
+
+        ZoomBehavior zoomBehavior = Camera.main.GetComponent<ZoomBehavior>();
+        if (zoomBehavior != null)
+            zoomBehavior.playerIsDead = true;
+
+        GameObject gameManager = GameObject.Find("GameManager");
+        if (gameManager != null)
+            gameManager.GetComponent<GameManager>().RespawnWithDelay(respawnDelay);
     }
 }

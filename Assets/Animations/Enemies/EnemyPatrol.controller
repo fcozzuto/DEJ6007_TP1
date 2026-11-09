@@ -122,7 +122,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Soldier Sheat Weapon
-  m_Speed: 1
+  m_Speed: -1
   m_CycleOffset: 0
   m_Transitions: []
   m_StateMachineBehaviours: []
@@ -134,7 +134,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: f6c6c273aefe6dd46ac96bde79d4c8b0, type: 2}
+  m_Motion: {fileID: 7400000, guid: 49143381283b4ca4594bedde645240ed, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -238,7 +238,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 70f4e168087251c4da55e5ef7732af63, type: 2}
+  m_Motion: {fileID: 7400000, guid: 76926f98e14e1a14d8bc3fc6a6bc75ca, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
