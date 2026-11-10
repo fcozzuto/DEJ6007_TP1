@@ -59,9 +59,9 @@ public class PlayerMovement : MonoBehaviour
         if (!isMoving)
             PlayAnimation("Idle");
         else if (isRunning)
-            PlayAnimation("Run");
+            PlayAnimation("Sprint With Sword");
         else
-            PlayAnimation("Walk");
+            PlayAnimation("Walking With Sword");
 
         float speed = isRunning ? runSpeed : walkSpeed;
         movement = transform.TransformDirection(movement) * speed;
