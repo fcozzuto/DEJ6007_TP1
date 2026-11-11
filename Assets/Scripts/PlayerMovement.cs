@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] private float walkSpeed = 5f;
-    [SerializeField] private float runSpeed = 8f;
+    [SerializeField] private float runSpeed = 9f;
     [SerializeField] private float jumpHeight = 2f;
     [SerializeField] private float gravity = -20f;
     [SerializeField] private Animator animator;
@@ -19,7 +19,7 @@ public class PlayerMovement : MonoBehaviour
 
     public bool IsDead { get; private set; }
     private Quaternion initialRotation;
-
+    private PlayerAttack combat;
     private InputAction moveAction;
     private InputAction jumpAction;
     private InputAction sprintAction;
@@ -28,6 +28,7 @@ public class PlayerMovement : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         initialRotation = characterVisual.localRotation;
+        combat = animator.GetComponent<PlayerAttack>();
     }
 
     private void Start()
@@ -50,7 +51,41 @@ public class PlayerMovement : MonoBehaviour
             jumpsUsed = 0;
         }
 
-        Vector2 input = Vector2.ClampMagnitude(
+        bool busy = combat != null && combat.IsBusy;
+        bool armed = combat != null && combat.SwordDrawn;
+
+        Vector2 input = busy
+            ? Vector2.zero
+            : Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f);
+
+        Vector3 movement = new Vector3(input.x, 0f, input.y);
+        bool isRunning = sprintAction.IsPressed();
+
+        if (busy)
+        {
+            currentAnimation = null;
+        }
+        else if (!controller.isGrounded)
+        {
+            if (verticalSpeed > 0f)
+                PlayAnimation("Forward Jump");
+            else
+                PlayAnimation("Falling Idle");
+        }
+        else if (movement.sqrMagnitude == 0f)
+        {
+            PlayAnimation("Idle");
+        }
+        else if (isRunning)
+        {
+            PlayAnimation(armed ? "Sprint With Sword" : "Sprint");
+        }
+        else
+        {
+            PlayAnimation(armed ? "Walking With Sword" : "Walk");
+        }
+
+        /*Vector2 input = Vector2.ClampMagnitude(
             moveAction.ReadValue<Vector2>(), 1f);
         Vector3 movement = new Vector3(input.x, 0f, input.y);
         bool isMoving = movement.sqrMagnitude > 0f;
@@ -61,7 +96,7 @@ public class PlayerMovement : MonoBehaviour
         else if (isRunning)
             PlayAnimation("Sprint With Sword");
         else
-            PlayAnimation("Walking With Sword");
+            PlayAnimation("Walking With Sword");*/
 
         float speed = isRunning ? runSpeed : walkSpeed;
         movement = transform.TransformDirection(movement) * speed;
@@ -78,17 +113,37 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // Each press jumps once, with two jumps allowed before landing.
-        if (jumpAction.WasPressedThisFrame() && jumpsUsed < 2)
+        // Each press jumps once, with two jumps allowed before landing.
+        if (!busy && jumpAction.WasPressedThisFrame() && jumpsUsed < 2)
         {
             verticalSpeed = Mathf.Sqrt(jumpHeight * -2f * gravity);
             jumpsUsed++;
+
+            // Allow the second jump to restart the jump animation.
+            currentAnimation = null;
+            PlayAnimation("Forward Jump");
         }
 
-        verticalSpeed += gravity * Time.deltaTime;
+        bool attackDrivesHeight = false;
+        Vector3 attackDelta = combat != null
+            ? combat.GetAttackDisplacement(out attackDrivesHeight)
+            : Vector3.zero;
+
+        if (attackDrivesHeight)
+            verticalSpeed = 0f; // The attack supplies the rise and descent.
+        else
+            verticalSpeed += gravity * Time.deltaTime;
+
         movement.y = verticalSpeed;
 
         if (controller.enabled)
-            controller.Move(movement * Time.deltaTime);
+            controller.Move(movement * Time.deltaTime + attackDelta);
+
+        /*verticalSpeed += gravity * Time.deltaTime;
+        movement.y = verticalSpeed;
+
+        if (controller.enabled)
+            controller.Move(movement * Time.deltaTime);*/
 
         if ((controller.collisionFlags & CollisionFlags.Above) != 0
             && verticalSpeed > 0f)
@@ -145,6 +200,7 @@ public class PlayerMovement : MonoBehaviour
             return;
 
         IsDead = true;
+        combat?.ResetCombat();
         animator.enabled = false;
         PausePlayerController();
 

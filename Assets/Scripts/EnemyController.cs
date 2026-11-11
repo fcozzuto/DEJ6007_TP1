@@ -154,7 +154,7 @@ public class EnemyController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        PlayerMovement playerMovement = other.GetComponentInParent<PlayerMovement>();
+        PlayerMovement playerMovement = other.GetComponent<PlayerMovement>();
         if (playerMovement == null)
             return;
 
