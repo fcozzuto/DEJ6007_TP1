@@ -4,16 +4,18 @@ using UnityEngine.SceneManagement;
 public class GameManager : MonoBehaviour
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    [SerializeField] private GameObject[] Checkpoints;
     [SerializeField] private GameObject Player;
     [SerializeField] private Animator[] heartAnimators = new Animator[3];
     [SerializeField] private GameObject gameOverUI;
     [SerializeField] private GameObject victoryUI;
+    [SerializeField] private Checkpoint startingCheckpoint;
+
+    private Checkpoint activeCheckpoint;
 
     private int lives = 3;
-    void Start()
+    private void Start()
     {
-        
+        ActivateCheckpoint(startingCheckpoint);
     }
 
     // Update is called once per frame
@@ -25,34 +27,33 @@ public class GameManager : MonoBehaviour
             playerMovement.Die(1f);
     }
 
+    public void ActivateCheckpoint(Checkpoint checkpoint)
+    {
+        if (checkpoint == null || checkpoint == activeCheckpoint)
+            return;
+
+        activeCheckpoint = checkpoint;
+
+        Debug.Log($"Checkpoint activated: {activeCheckpoint.name}");
+    }
+
     private void RespawnPlayer()
     {
-        // Find the closest active checkpoint
-        LoseLife();
-        GameObject closestCheckpoint = null;
-        float closestDistance = Mathf.Infinity;
-        foreach (GameObject checkpoint in Checkpoints)
+        if (activeCheckpoint == null)
         {
-            float distance = Vector3.Distance(Player.transform.position, checkpoint.transform.position);
-            Debug.Log($"Distance to checkpoint {checkpoint.name}: {distance}");
-            if (distance < closestDistance)
-            {
-                closestDistance = distance;
-                closestCheckpoint = checkpoint;
-            }
+            Debug.LogError("Assign a starting checkpoint on GameManager.");
+            return;
         }
 
-        // Respawn the player at the closest checkpoint
-        if (closestCheckpoint != null)
-        {
-            Debug.Log($"Respawning player at checkpoint {closestCheckpoint.name}");
-            Player.GetComponent<PlayerMovement>().RespawnAt(
-                closestCheckpoint.transform.position,
-                closestCheckpoint.transform.rotation);
-            ZoomBehavior zoomBehavior = Camera.main.GetComponent<ZoomBehavior>();
-            if (zoomBehavior != null)
-                zoomBehavior.playerIsDead = false;
-        }
+        LoseLife();
+
+        Player.GetComponent<PlayerMovement>().RespawnAt(
+            activeCheckpoint.transform.position,
+            activeCheckpoint.transform.rotation);
+
+        ZoomBehavior zoomBehavior = Camera.main.GetComponent<ZoomBehavior>();
+        if (zoomBehavior != null)
+            zoomBehavior.playerIsDead = false;
     }
 
     public void RespawnWithDelay(float delay)
