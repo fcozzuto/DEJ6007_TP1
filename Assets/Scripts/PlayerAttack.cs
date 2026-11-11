@@ -5,8 +5,10 @@ using UnityEngine.InputSystem;
 [DefaultExecutionOrder(-10)]
 public class PlayerAttack : MonoBehaviour
 {
-    private enum Phase { Ready, Drawing, First, ReadyForSecond, Second, Sheathing }
-
+    private enum Phase
+    {
+        Ready, Drawing, First, ReadyForSecond, Second, Sheathing, Casting
+    }
     [SerializeField] private PlayerMovement movement;
     [SerializeField] private GameObject swordInHand;
     [SerializeField] private GameObject swordSheathed;
@@ -14,7 +16,11 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] private float firstAttackDistance = 1f;
     [SerializeField] private float secondAttackDistance = 2f;
     [SerializeField] private float secondAttackHeight = 2f;
+    [SerializeField] private Fireball fireballPrefab;
+    [SerializeField] private Transform fireballSpawn;
 
+    private InputAction fireballAction;
+    private bool fireballReleased;
     private Vector3 attackForward;
     private float previousTravel;
     private float previousLift;
@@ -45,6 +51,7 @@ public class PlayerAttack : MonoBehaviour
     private void Start()
     {
         attackAction = InputSystem.actions.FindAction("Player/Attack", true);
+        fireballAction = InputSystem.actions.FindAction("Player/Fireball", true);
     }
 
     private void Update()
@@ -58,6 +65,19 @@ public class PlayerAttack : MonoBehaviour
         {
             if (!controller.isGrounded)
                 return;
+
+            if (fireballAction.WasPressedThisFrame())
+            {
+                attackForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+                fireballReleased = false;
+                queuedAttacks = 0;
+
+                swordInHand.SetActive(false);
+                swordSheathed.SetActive(true);
+
+                Begin(Phase.Casting, "Gunplay");
+                return;
+            }
 
             if (SwordDrawn && Time.time >= sheathAt)
             {
@@ -120,6 +140,11 @@ public class PlayerAttack : MonoBehaviour
 
             case Phase.Sheathing:
                 ResetCombat();
+                break;
+
+            case Phase.Casting:
+                SetSwordDrawn(SwordDrawn);
+                WaitWithSwordDrawn(Phase.Ready);
                 break;
         }
     }
@@ -243,5 +268,22 @@ public class PlayerAttack : MonoBehaviour
     private static float EaseBetween(float start, float end, float t)
     {
         return Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(start, end, t));
+    }
+
+    public void ReleaseFireball()
+    {
+        if (phase != Phase.Casting || fireballReleased || movement.IsDead)
+            return;
+
+        fireballReleased = true;
+
+        Vector3 position = fireballSpawn.position + attackForward * 0.2f;
+
+        Fireball projectile = Instantiate(
+            fireballPrefab,
+            position,
+            Quaternion.LookRotation(attackForward));
+
+        projectile.Launch(attackForward, movement.transform);
     }
 }

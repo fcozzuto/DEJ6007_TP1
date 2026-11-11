@@ -12359,6 +12359,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 482004, guid: 20a79b55466cdb84da379ae63fc30867, type: 3}
   m_PrefabInstance: {fileID: 16742484}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &955898482
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 955898483}
+  m_Layer: 0
+  m_Name: FireSpawn
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &955898483
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 955898482}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1955954453}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &956711147
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -23264,6 +23295,8 @@ MonoBehaviour:
   firstAttackDistance: 2
   secondAttackDistance: 3
   secondAttackHeight: 2
+  fireballPrefab: {fileID: 8205996371889607323, guid: c1bedb36d1554124faafb2fd8927f6da, type: 3}
+  fireballSpawn: {fileID: 955898483}
 --- !u!1001 &1673552912
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -27996,6 +28029,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5465940246521907071, guid: 6953be7d185477e4d88f29441b1baa6f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1321362853}
+    - targetCorrespondingSourceObject: {fileID: 1852576806548013000, guid: 6953be7d185477e4d88f29441b1baa6f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 955898483}
     - targetCorrespondingSourceObject: {fileID: 234480625599603528, guid: 6953be7d185477e4d88f29441b1baa6f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1366715128}
@@ -28100,6 +28136,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1899766390}
   m_SourcePrefab: {fileID: 100100000, guid: 6953be7d185477e4d88f29441b1baa6f, type: 3}
+--- !u!4 &1955954453 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1852576806548013000, guid: 6953be7d185477e4d88f29441b1baa6f, type: 3}
+  m_PrefabInstance: {fileID: 1955954452}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1964617417
 PrefabInstance:
   m_ObjectHideFlags: 0
