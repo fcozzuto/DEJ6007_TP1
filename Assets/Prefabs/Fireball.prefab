@@ -97,6 +97,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fireball
   speed: 15
   lifetime: 0.6
+  explosionPrefab: {fileID: 1804206099813350, guid: 23d925592bfbb22428a47850f6e26391, type: 3}
 --- !u!1001 &2504448575402116076
 PrefabInstance:
   m_ObjectHideFlags: 0
