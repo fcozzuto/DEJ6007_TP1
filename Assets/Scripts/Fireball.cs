@@ -4,7 +4,7 @@ using UnityEngine;
 public class Fireball : MonoBehaviour
 {
     [SerializeField] private float speed = 12f;
-    [SerializeField] private float lifetime = 2f;
+    [SerializeField] private float lifetime = 1f;
 
     private Rigidbody body;
     private SphereCollider projectileCollider;
@@ -47,8 +47,6 @@ public class Fireball : MonoBehaviour
 
         EnemyController enemy = other.GetComponentInParent<EnemyController>();
         if (enemy != null)
-            enemy.gameObject.SetActive(false);
-
-        Destroy(gameObject);
+            enemy.Die();
     }
 }

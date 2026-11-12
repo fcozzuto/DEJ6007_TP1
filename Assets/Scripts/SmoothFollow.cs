@@ -13,6 +13,13 @@ public class SmoothFollow : MonoBehaviour
 
     private bool wasDead;
     private Vector3 deathPositionOffset;
+    private PlayerMovement playerWaitingForCamera;
+
+    public void WaitForCamera(PlayerMovement player)
+    {
+        playerWaitingForCamera = player;
+        player.PausePlayerController();
+    }
 
     private void Awake()
     {
@@ -65,5 +72,14 @@ public class SmoothFollow : MonoBehaviour
 
         transform.rotation = Quaternion.Lerp(
             transform.rotation, desiredRotation, blend);
+
+        if (playerWaitingForCamera != null &&
+            Vector3.Distance(transform.position, desiredPosition) <= 0.15f &&
+            Quaternion.Angle(transform.rotation, desiredRotation) <= 2f)
+        {
+            PlayerMovement player = playerWaitingForCamera;
+            playerWaitingForCamera = null;
+            player.ResumePlayerController();
+        }
     }
 }

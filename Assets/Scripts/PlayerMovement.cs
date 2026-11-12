@@ -85,19 +85,6 @@ public class PlayerMovement : MonoBehaviour
             PlayAnimation(armed ? "Walking With Sword" : "Walk");
         }
 
-        /*Vector2 input = Vector2.ClampMagnitude(
-            moveAction.ReadValue<Vector2>(), 1f);
-        Vector3 movement = new Vector3(input.x, 0f, input.y);
-        bool isMoving = movement.sqrMagnitude > 0f;
-        bool isRunning = sprintAction.IsPressed();
-
-        if (!isMoving)
-            PlayAnimation("Idle");
-        else if (isRunning)
-            PlayAnimation("Sprint With Sword");
-        else
-            PlayAnimation("Walking With Sword");*/
-
         float speed = isRunning ? runSpeed : walkSpeed;
         movement = transform.TransformDirection(movement) * speed;
 
@@ -112,7 +99,6 @@ public class PlayerMovement : MonoBehaviour
                 turnSpeed * Time.deltaTime);
         }
 
-        // Each press jumps once, with two jumps allowed before landing.
         // Each press jumps once, with two jumps allowed before landing.
         if (!busy && jumpAction.WasPressedThisFrame() && jumpsUsed < 2)
         {
@@ -138,12 +124,6 @@ public class PlayerMovement : MonoBehaviour
 
         if (controller.enabled)
             controller.Move(movement * Time.deltaTime + attackDelta);
-
-        /*verticalSpeed += gravity * Time.deltaTime;
-        movement.y = verticalSpeed;
-
-        if (controller.enabled)
-            controller.Move(movement * Time.deltaTime);*/
 
         if ((controller.collisionFlags & CollisionFlags.Above) != 0
             && verticalSpeed > 0f)
@@ -185,13 +165,23 @@ public class PlayerMovement : MonoBehaviour
     public void PausePlayerController()
     {
         controller.enabled = false;
+
+        if (IsDead)
+            return;
+
+        if (combat != null && combat.IsBusy)
+            combat.CancelCurrentAction();
+
+        currentAnimation = null;
+        PlayAnimation("Idle");
     }
+
     public void ResumePlayerController()
     {
-        if (!IsDead)
-        {
-            controller.enabled = true;
-        }
+        if (IsDead)
+            return;
+
+        controller.enabled = true;
     }
 
     public void Die(float respawnDelay = 3f)

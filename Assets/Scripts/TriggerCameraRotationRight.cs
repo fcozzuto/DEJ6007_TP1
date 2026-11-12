@@ -26,15 +26,14 @@ public class TriggerCameraRotationRight : MonoBehaviour
         Debug.Log("Player entered trigger, rotating camera to the right!");
         // Rotate the player to the right by -90 degrees
         other.gameObject.transform.Rotate(0, -90, 0);
-        other.gameObject.GetComponent<PlayerMovement>().PausePlayerController();
-        activated = true;
+        Camera.main.GetComponent<SmoothFollow>().WaitForCamera(
+            other.GetComponent<PlayerMovement>()); activated = true;
         GetComponent<Collider>().enabled = false;
         GameObject triggerArea = GameObject.Find("TriggerCameraRotationLeft");
         if (triggerArea != null)
         {
             Rearm(triggerArea);
         }
-        other.gameObject.GetComponent<PlayerMovement>().ResumePlayerController();
     }
 
     private static void Rearm(GameObject triggerArea)

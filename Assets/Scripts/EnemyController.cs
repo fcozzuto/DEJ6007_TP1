@@ -30,16 +30,29 @@ public class EnemyController : MonoBehaviour
     private bool patrolInterrupted = false;
     private Vector3 patrolResumePosition;
     private Quaternion patrolResumeRotation;
+    private Rigidbody[] ragdollBodies;
+
+    public bool IsDead { get; private set; }
+
+    private void Awake()
+    {
+        animator = GetComponent<Animator>();
+        ragdollBodies = GetComponentsInChildren<Rigidbody>(true);
+        SetRagdoll(false);
+    }
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         enemyPosition = this.gameObject.transform.position.x;
-        animator = GetComponent<Animator>();
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (IsDead)
+            return;
+
         playerDetected = false;
 
         if (player != null)
@@ -154,6 +167,9 @@ public class EnemyController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (IsDead)
+            return;
+
         PlayerMovement playerMovement = other.GetComponent<PlayerMovement>();
         if (playerMovement == null)
             return;
@@ -256,8 +272,10 @@ public class EnemyController : MonoBehaviour
 
     public void ThrowDagger()
     {
-        if (soldierState != SoldierState.Attack || player == null ||
-            player.GetComponent<PlayerMovement>().IsDead)
+        if (IsDead
+            || soldierState != SoldierState.Attack
+            || player == null
+            || player.GetComponent<PlayerMovement>().IsDead)
             return;
 
         Vector3 spawnPosition = heldDagger.bounds.center;
@@ -271,5 +289,38 @@ public class EnemyController : MonoBehaviour
             daggerPrefab, spawnPosition, Quaternion.LookRotation(direction));
 
         dagger.Launch(direction, transform);
+    }
+
+    private void SetRagdoll(bool active)
+    {
+        foreach (Rigidbody body in ragdollBodies)
+        {
+            // The root Rigidbody belongs to the living enemy's collider.
+            if (body.gameObject == gameObject)
+                continue;
+
+            body.isKinematic = !active;
+            body.useGravity = active;
+
+            foreach (Collider boneCollider in body.GetComponents<Collider>())
+                boneCollider.enabled = active;
+        }
+    }
+
+    public void Die()
+    {
+        if (IsDead)
+            return;
+
+        IsDead = true;
+        animator.enabled = false;
+
+        foreach (Collider rootCollider in GetComponents<Collider>())
+            rootCollider.enabled = false;
+
+        Physics.SyncTransforms();
+        SetRagdoll(true);
+
+        Destroy(gameObject, 2f);
     }
 }

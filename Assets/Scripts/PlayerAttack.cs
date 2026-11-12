@@ -286,4 +286,10 @@ public class PlayerAttack : MonoBehaviour
 
         projectile.Launch(attackForward, movement.transform);
     }
+
+    public void CancelCurrentAction()
+    {
+        SetSwordDrawn(SwordDrawn);
+        WaitWithSwordDrawn(Phase.Ready);
+    }
 }
