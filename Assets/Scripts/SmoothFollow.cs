@@ -24,15 +24,12 @@ public class SmoothFollow : MonoBehaviour
     private void Awake()
     {
         zoomBehavior = GetComponent<ZoomBehavior>();
-    }
 
-    private void Start()
-    {
-        if (target == null) return;
-
-        // Preserve the camera's initial angle relative to the player.
-        rotationOffset = Quaternion.Inverse(target.rotation)
-            * transform.rotation;
+        if (target != null)
+        {
+            rotationOffset = Quaternion.Inverse(target.rotation)
+                * transform.rotation;
+        }
     }
 
     private void LateUpdate()
@@ -81,5 +78,15 @@ public class SmoothFollow : MonoBehaviour
             playerWaitingForCamera = null;
             player.ResumePlayerController();
         }
+    }
+
+    public void SnapToTarget()
+    {
+        if (target == null)
+            return;
+
+        transform.SetPositionAndRotation(
+            target.position + target.TransformDirection(offset),
+            target.rotation * rotationOffset);
     }
 }

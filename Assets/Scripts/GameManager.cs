@@ -15,7 +15,19 @@ public class GameManager : MonoBehaviour
     private int lives = 3;
     private void Start()
     {
+        if (startingCheckpoint == null)
+        {
+            Debug.LogError("Assign a starting checkpoint on GameManager.");
+            return;
+        }
+
         ActivateCheckpoint(startingCheckpoint);
+
+        Player.GetComponent<PlayerMovement>().RespawnAt(
+            startingCheckpoint.transform.position,
+            startingCheckpoint.transform.rotation);
+
+        Camera.main.GetComponent<SmoothFollow>().SnapToTarget();
     }
 
     // Update is called once per frame
