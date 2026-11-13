@@ -8,7 +8,7 @@ public class SmoothFollow : MonoBehaviour
     public Vector3 offset;
     public float smoothSpeed = 5f;
 
-    private Quaternion rotationOffset;
+    public Quaternion rotationOffset;
     private ZoomBehavior zoomBehavior;
 
     private bool wasDead;

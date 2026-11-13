@@ -27,7 +27,7 @@ public class FireActivator : MonoBehaviour
 
         isLit = true;
         fireEffect.SetActive(true);
-        gateAnimator.Play("Base Layer.Lava Room Gate motion", 0, 0f);
+        gateAnimator.Play("Base Layer.Gate motion", 0, 0f);
 
         if (lavaHiddenPlatform != null && this.gameObject.name == "Lava_Room_Brazier")
             lavaHiddenPlatform.Play("Base Layer.Hidden Lava Platform motion", 0, 0f);

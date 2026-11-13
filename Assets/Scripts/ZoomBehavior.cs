@@ -9,7 +9,7 @@ public class ZoomBehavior : MonoBehaviour
     public bool playerIsDead = false;
 
     private Camera viewCamera;
-    private float normalFieldOfView;
+    public float normalFieldOfView;
 
     private void Awake()
     {
