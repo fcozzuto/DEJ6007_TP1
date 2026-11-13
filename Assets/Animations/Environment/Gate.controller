@@ -32,7 +32,7 @@ AnimatorController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Lava Room Gate
+  m_Name: Gate
   serializedVersion: 5
   m_AnimatorParameters: []
   m_AnimatorLayers:
@@ -80,7 +80,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Lava Room Gate motion
+  m_Name: Gate motion
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
