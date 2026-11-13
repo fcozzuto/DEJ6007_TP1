@@ -24,6 +24,8 @@ public class EnemyController : MonoBehaviour
     [SerializeField] private Transform player;
     [SerializeField] private float chaseSpeed = 3f;
     [SerializeField] private float stoppingDistance = 2f;
+    [SerializeField] private bool bossFightEnemy;
+    [SerializeField] private float approachSpeed = 2f;
     [SerializeField] private FlyingDagger daggerPrefab;
     [SerializeField] private MeshRenderer heldDagger;
 
@@ -67,7 +69,7 @@ public class EnemyController : MonoBehaviour
                 offset.magnitude <= detectionRange;
         }
 
-        if (gameObject.name != "Viking")
+        if (!gameObject.name.Contains("Viking"))
         {
             UpdateSoldier();
             return;
@@ -76,7 +78,7 @@ public class EnemyController : MonoBehaviour
         if (playerDetected)
         {
             // Save the patrol position and heading once.
-            if (!patrolInterrupted)
+            if (!bossFightEnemy && !patrolInterrupted)
             {
                 patrolResumePosition = transform.position;
                 patrolResumeRotation = transform.rotation;
@@ -84,6 +86,11 @@ public class EnemyController : MonoBehaviour
             }
 
             ChasePlayer();
+        }
+        else if (bossFightEnemy)
+        {
+            detectionRange = 10f;
+            ApproachPlayer();
         }
         else if (patrolInterrupted)
         {
@@ -147,8 +154,33 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+
+    private void ApproachPlayer()
+    {
+        if (player == null || player.GetComponent<PlayerMovement>().IsDead)
+        {
+            animator.Play("Idle");
+            return;
+        }
+
+        Vector3 destination = player.position;
+        destination.y = transform.position.y;
+        Vector3 direction = destination - transform.position;
+
+        if (direction.sqrMagnitude > 0.000001f)
+            transform.rotation = Quaternion.LookRotation(direction);
+
+        animator.Play("Walk");
+        transform.position = Vector3.MoveTowards(
+            transform.position, destination, approachSpeed * Time.deltaTime);
+    }
     private void Patrol()
     {
+        if (bossFightEnemy)
+        {
+            ApproachPlayer();
+            return;
+        }
         // The enemy will patrol by walking forward between two points, and when it reaches one of the points, it will turn around and walk to the other point
         this.gameObject.transform.Translate(Vector3.forward * Time.deltaTime * 2);
         animator.Play("Walk");

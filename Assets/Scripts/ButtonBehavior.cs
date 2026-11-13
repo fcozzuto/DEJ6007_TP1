@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class ButtonBehavior : MonoBehaviour
 {
+    [SerializeField] private Animator platformsAnimator;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -33,6 +34,7 @@ public class ButtonBehavior : MonoBehaviour
                     hiddenPlatform.gameObject.GetComponentInChildren<Collider>().enabled = true;
                     // Disable the button's collider so it can't be pressed again
                 }
+                platformsAnimator.Play("Hidden Platforms Entrance motion");
                 this.gameObject.GetComponentInChildren<Collider>().enabled = false;
             }
             else if (this.gameObject.name == "Button Hidden Door")

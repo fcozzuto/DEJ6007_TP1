@@ -53,6 +53,12 @@ public class Fireball : MonoBehaviour
         if (activator != null)
             activator.Ignite();
 
+        BossFightActivator bossActivator =
+        other.GetComponentInParent<BossFightActivator>();
+
+        if (bossActivator != null)
+            bossActivator.Ignite();
+
         Explode();
     }
 

@@ -23,12 +23,14 @@ public class PlayerMovement : MonoBehaviour
     private InputAction moveAction;
     private InputAction jumpAction;
     private InputAction sprintAction;
+    private SmoothFollow cameraFollow;
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
         initialRotation = characterVisual.localRotation;
         combat = animator.GetComponent<PlayerAttack>();
+        cameraFollow = Camera.main.GetComponent<SmoothFollow>();
     }
 
     private void Start()
@@ -59,6 +61,10 @@ public class PlayerMovement : MonoBehaviour
             : Vector2.ClampMagnitude(moveAction.ReadValue<Vector2>(), 1f);
 
         Vector3 movement = new Vector3(input.x, 0f, input.y);
+
+        if (cameraFollow.BossRoomViewActive)
+            movement = -movement;
+
         bool isRunning = sprintAction.IsPressed();
 
         if (busy)

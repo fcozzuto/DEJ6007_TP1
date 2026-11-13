@@ -25,6 +25,7 @@ public class TriggerCameraOffset : MonoBehaviour
 
         Debug.Log("Player entered trigger, restoring side follow!");
         Camera.main.GetComponent<SmoothFollow>().offset = new Vector3(3, 3.9f, -5.61f);
+        Camera.main.nearClipPlane = 4.1f;
         activated = true;
         GetComponent<Collider>().enabled = false;
         GameObject triggerArea = GameObject.Find("TriggerCameraCentering");

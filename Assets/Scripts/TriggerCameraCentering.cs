@@ -25,6 +25,7 @@ public class TriggerCameraCentering : MonoBehaviour
 
         Debug.Log("Player entered trigger, centering camera behind the player!");
         Camera.main.GetComponent<SmoothFollow>().offset = new Vector3(0, 3.9f, -5.61f);
+        Camera.main.nearClipPlane = 3.0f;
         activated = true;
         GetComponent<Collider>().enabled = false;
         GameObject triggerArea = GameObject.Find("TriggerCameraOffset");

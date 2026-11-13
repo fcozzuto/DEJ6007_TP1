@@ -90,11 +90,22 @@ public class GameManager : MonoBehaviour
 
     public void RestartLevel()
     {
+        Time.timeScale = 1f;
+
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     public void QuitGame()
     {
         Application.Quit();
+    }
+
+    public void WinGame()
+    {
+        Player.GetComponent<PlayerMovement>().PausePlayerController();
+
+        victoryUI.SetActive(true);
+
+        Time.timeScale = 0f;
     }
 }
