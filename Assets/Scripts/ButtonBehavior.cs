@@ -4,35 +4,38 @@ using UnityEngine;
 public class ButtonBehavior : MonoBehaviour
 {
     [SerializeField] private Animator platformsAnimator;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
+    // No startup setup is needed for these floor buttons.
     void Start()
     {
-        
+
     }
 
-    // Update is called once per frame
+    // The buttons react to trigger entry; there is no per-frame work here.
     void Update()
     {
-        
+
     }
+    // Play the pressed button animation, then reveal the platforms or open the hidden passage.
     private void OnTriggerEnter(Collider other)
     {
-        // If the Player touches the button, the button will move down and the hidden platform will activate
+
         if (other.gameObject.CompareTag("Player"))
         {
             Debug.Log("Button pressed!");
-            // Move the button down slowly using an animation
+
             if (this.gameObject.name == "Button Hidden Platforms")
             {
                 this.gameObject.GetComponent<Animator>().Play("PressPlatformButton");
-                // Activate the hidden platforms
+
+                // The platforms are already in the scene; reveal their renderers and enable their colliders.
                 GameObject[] hiddenPlatforms = GameObject.FindGameObjectsWithTag("HiddenPlatform");
                 foreach (GameObject hiddenPlatform in hiddenPlatforms)
                 {
                     Debug.Log("Hidden platform exists!");
                     hiddenPlatform.gameObject.GetComponentInChildren<Renderer>().enabled = true;
                     hiddenPlatform.gameObject.GetComponentInChildren<Collider>().enabled = true;
-                    // Disable the button's collider so it can't be pressed again
+
                 }
                 platformsAnimator.Play("Hidden Platforms Entrance motion");
                 this.gameObject.GetComponentInChildren<Collider>().enabled = false;
@@ -51,6 +54,7 @@ public class ButtonBehavior : MonoBehaviour
                 {
                     Debug.LogWarning("Fake wall not found!");
                 }
+                // Remove the brazier that would otherwise block the newly opened passage.
                 GameObject fakeBrazier = GameObject.Find("FakeBrazier");
                 if (fakeBrazier != null)
                 {

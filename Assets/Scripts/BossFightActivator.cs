@@ -20,6 +20,7 @@ public class BossFightActivator : MonoBehaviour
 
     public int RemainingEnemies { get; private set; }
 
+    // Start with the brazier unlit, the exit camera trigger locked, and all wave templates hidden.
     private void Awake()
     {
         if (fireEffect != null)
@@ -31,6 +32,7 @@ public class BossFightActivator : MonoBehaviour
         if (endCameraTrigger != null)
             endCameraTrigger.SetUnlocked(false);
 
+        // These groups are templates; only their spawned copies should be active.
         foreach (GameObject wave in waves)
         {
             if (wave != null)
@@ -38,6 +40,7 @@ public class BossFightActivator : MonoBehaviour
         }
     }
 
+    // Light the brazier, close the boss-room entrance, and start the first wave.
     public void Ignite()
     {
         if (isLit)
@@ -66,6 +69,7 @@ public class BossFightActivator : MonoBehaviour
         StartNextWave();
     }
 
+    // Count the survivors and advance the fight, or reset the arena if the player dies.
     private void Update()
     {
         if (!isLit || fightComplete)
@@ -81,6 +85,7 @@ public class BossFightActivator : MonoBehaviour
 
         foreach (EnemyController enemy in currentWaveEnemies)
         {
+            // Count deaths immediately instead of waiting for the ragdoll objects to be destroyed.
             if (enemy != null && !enemy.IsDead)
                 RemainingEnemies++;
         }
@@ -89,6 +94,7 @@ public class BossFightActivator : MonoBehaviour
             StartNextWave();
     }
 
+    // Spawn the next wave, or open the gates and unlock the ending when every wave is cleared.
     private void StartNextWave()
     {
         currentWaveIndex++;
@@ -105,6 +111,7 @@ public class BossFightActivator : MonoBehaviour
         }
 
         GameObject template = waves[currentWaveIndex];
+        // Fresh copies let the fight restart after enemies from the previous attempt are destroyed.
         GameObject wave = Instantiate(template, template.transform.parent);
         spawnedWaves.Add(wave);
         wave.SetActive(true);
@@ -117,6 +124,7 @@ public class BossFightActivator : MonoBehaviour
             this);
     }
 
+    // Remove the spawned waves and reset the brazier, gate, light, and camera trigger for another attempt.
     private void ResetFight()
     {
         isLit = false;

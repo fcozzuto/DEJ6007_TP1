@@ -11,21 +11,22 @@ public class ZoomBehavior : MonoBehaviour
     private Camera viewCamera;
     public float normalFieldOfView;
 
+    // Cache the camera and remember its normal field of view for the return from the death zoom.
     private void Awake()
     {
         viewCamera = GetComponent<Camera>();
 
-        // Remember the camera's normal Inspector setting.
         normalFieldOfView = viewCamera.fieldOfView;
     }
 
+    // Zoom in while the player is dead and move back toward the normal field of view after respawning.
     private void LateUpdate()
     {
         float targetFieldOfView = playerIsDead
             ? deathFieldOfView
             : normalFieldOfView;
 
-        // Degrees per second: complete either transition in zoomDuration.
+        // Convert duration to degrees per second for a steady zoom in either direction.
         float zoomSpeed =
             Mathf.Abs(normalFieldOfView - deathFieldOfView)
             / Mathf.Max(0.01f, zoomDuration);

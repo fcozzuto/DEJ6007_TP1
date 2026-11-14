@@ -3,13 +3,14 @@ using UnityEngine;
 public class TriggerCameraRotationRight : MonoBehaviour
 {
     public bool activated = false;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
+    // No startup setup is needed; the Inspector defines this camera trigger.
     void Start()
     {
-        
+
     }
 
-    // Update is called once per frame
+    // Clear the activation flag while this collider is disabled so the paired trigger can rearm it.
     void Update()
     {
         if (activated && !GetComponent<Collider>().enabled)
@@ -18,7 +19,7 @@ public class TriggerCameraRotationRight : MonoBehaviour
         }
     }
 
-    // If the player enters the trigger, rotate the player to the right by 90 degrees
+    // Rotate the camera and controls right, keep the model's facing, and arm the left trigger.
     private void OnTriggerEnter(Collider other)
     {
         if (activated || !other.gameObject.CompareTag("Player")) return;
@@ -38,6 +39,7 @@ public class TriggerCameraRotationRight : MonoBehaviour
         }
     }
 
+    // Enable the paired zone's collider so it can handle the return trip.
     private static void Rearm(GameObject triggerArea)
     {
         Collider triggerCollider = triggerArea.GetComponent<Collider>();

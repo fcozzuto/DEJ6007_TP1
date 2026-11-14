@@ -25,6 +25,7 @@ public class PlayerMovement : MonoBehaviour
     private InputAction sprintAction;
     private SmoothFollow cameraFollow;
 
+    // Cache the controller, combat script, and camera, and remember the model's initial local rotation.
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -33,6 +34,7 @@ public class PlayerMovement : MonoBehaviour
         cameraFollow = Camera.main.GetComponent<SmoothFollow>();
     }
 
+    // Get the movement, jump, and sprint actions from the project input settings.
     private void Start()
     {
         var actions = InputSystem.actions;
@@ -41,6 +43,7 @@ public class PlayerMovement : MonoBehaviour
         sprintAction = actions.FindAction("Player/Sprint", throwIfNotFound: true);
     }
 
+    // Handle movement, facing, locomotion animations, jumps, and movement from attacks.
     private void Update()
     {
         if (GameManager.GameplayInputBlocked)
@@ -49,9 +52,9 @@ public class PlayerMovement : MonoBehaviour
         if (IsDead || !controller.enabled)
             return;
 
-        // Reset jumps after landing. Keep a small downward push.
         if (controller.isGrounded && verticalSpeed <= 0f)
         {
+            // A small downward push keeps the CharacterController grounded between frames.
             verticalSpeed = -2f;
             jumpsUsed = 0;
         }
@@ -65,11 +68,12 @@ public class PlayerMovement : MonoBehaviour
 
         Vector3 movement = new Vector3(input.x, 0f, input.y);
 
-        // Match movement to the selected camera angle: side, boss room, or rear view.
+        // Apply the view angle first; TransformDirection below adds the Player root rotation.
         movement = cameraFollow.MovementRotation * movement;
 
         bool isRunning = sprintAction.IsPressed();
 
+        // Combat owns the Animator here; clear the cache so locomotion can resume afterward.
         if (busy)
         {
             currentAnimation = null;
@@ -108,13 +112,13 @@ public class PlayerMovement : MonoBehaviour
                 turnSpeed * Time.deltaTime);
         }
 
-        // Each press jumps once, with two jumps allowed before landing.
         if (!busy && jumpAction.WasPressedThisFrame() && jumpsUsed < 2)
         {
+            // Convert jump height to takeoff speed using the current gravity.
             verticalSpeed = Mathf.Sqrt(jumpHeight * -2f * gravity);
             jumpsUsed++;
 
-            // Allow the second jump to restart the jump animation.
+            // Clear the cached state so the second jump can restart the same clip.
             currentAnimation = null;
             PlayAnimation("Forward Jump");
         }
@@ -124,8 +128,9 @@ public class PlayerMovement : MonoBehaviour
             ? combat.GetAttackDisplacement(out attackDrivesHeight)
             : Vector3.zero;
 
+        // Use the attack's vertical motion during the hop instead of adding normal gravity.
         if (attackDrivesHeight)
-            verticalSpeed = 0f; // The attack supplies the rise and descent.
+            verticalSpeed = 0f;
         else
             verticalSpeed += gravity * Time.deltaTime;
 
@@ -141,9 +146,10 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    // Blend to a different locomotion state without restarting the same animation every frame.
     private void PlayAnimation(string stateName)
     {
-        // Only switch when the requested animation changes.
+
         if (animator == null || currentAnimation == stateName)
             return;
 
@@ -151,8 +157,10 @@ public class PlayerMovement : MonoBehaviour
         currentAnimation = stateName;
     }
 
+    // Turn the camera and movement reference while preserving the model's world rotation.
     public void RotateForCamera(float angle)
     {
+        // Store world rotation, since rotating the parent also turns its child model.
         Quaternion visualRotation = characterVisual.rotation;
 
         transform.Rotate(0f, angle, 0f);
@@ -160,17 +168,19 @@ public class PlayerMovement : MonoBehaviour
         characterVisual.rotation = visualRotation;
     }
 
+    // Restore the checkpoint position, facing, and controls, clearing the last jump or fall.
     public void RespawnAt(Vector3 position, Quaternion facingRotation)
     {
         transform.SetPositionAndRotation(
         position,
+        // Undo the model's local offset so its world facing matches the checkpoint.
         facingRotation * Quaternion.Inverse(initialRotation));
 
         characterVisual.rotation = facingRotation;
 
-        Physics.SyncTransforms(); // Ensure the CharacterController is in sync with the new position
+        // Update the physics position before the CharacterController is enabled again.
+        Physics.SyncTransforms();
 
-        // Start the new life without the previous fall's momentum.
         verticalSpeed = 0f;
         jumpsUsed = 0;
         currentAnimation = null;
@@ -180,6 +190,7 @@ public class PlayerMovement : MonoBehaviour
         animator.enabled = true;
     }
 
+    // Pause movement for a camera turn, cancel combat, and put a living player in Idle.
     public void PausePlayerController()
     {
         controller.enabled = false;
@@ -194,6 +205,7 @@ public class PlayerMovement : MonoBehaviour
         PlayAnimation("Idle");
     }
 
+    // Restore movement after the camera settles, unless the player is dead.
     public void ResumePlayerController()
     {
         if (IsDead)
@@ -202,6 +214,7 @@ public class PlayerMovement : MonoBehaviour
         controller.enabled = true;
     }
 
+    // Enable the death ragdoll and zoom, then request a delayed respawn or Game Over.
     public void Die(float respawnDelay = 3f)
     {
         if (IsDead)
@@ -209,6 +222,7 @@ public class PlayerMovement : MonoBehaviour
 
         IsDead = true;
         combat?.ResetCombat();
+        // The ragdoll bones can take over once the Animator stops driving the skeleton.
         animator.enabled = false;
         PausePlayerController();
 

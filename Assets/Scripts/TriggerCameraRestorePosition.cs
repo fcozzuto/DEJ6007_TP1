@@ -4,6 +4,7 @@ public class TriggerCameraRestorePosition : MonoBehaviour
 {
     [SerializeField] private Collider behindPlayerTrigger;
 
+    // Restore the saved side view, disable this zone, and re-enable entry to the rear view.
     private void OnTriggerEnter(Collider other)
     {
         if (!GetComponent<Collider>().enabled)

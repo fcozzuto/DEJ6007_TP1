@@ -3,18 +3,20 @@ using UnityEngine;
 public class TriggerGameVictory : MonoBehaviour
 {
     [SerializeField] private GameManager GameManager;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
+    // No startup setup is needed; the GameManager reference is assigned in the Inspector.
     void Start()
     {
-        
+
     }
 
-    // Update is called once per frame
+    // Victory is handled on trigger entry, so there is no per-frame work here.
     void Update()
     {
-        
+
     }
 
+    // Ask the GameManager to show Victory when the player reaches the exit.
     void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))

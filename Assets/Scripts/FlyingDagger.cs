@@ -11,14 +11,17 @@ public class FlyingDagger : MonoBehaviour
     private Rigidbody body;
     private SphereCollider daggerCollider;
 
+    // Cache the dagger Rigidbody and collider before launching it.
     private void Awake()
     {
         body = GetComponent<Rigidbody>();
         daggerCollider = GetComponent<SphereCollider>();
     }
 
+    // Ignore the throwing enemy, launch the dagger, and remove it if it never hits anything.
     public void Launch(Vector3 direction, Transform owner)
     {
+        // The dagger starts inside the held weapon, so it must ignore the soldier who threw it.
         foreach (Collider ownerCollider in owner.GetComponentsInChildren<Collider>())
         {
             Physics.IgnoreCollision(daggerCollider, ownerCollider);
@@ -28,11 +31,13 @@ public class FlyingDagger : MonoBehaviour
         Destroy(gameObject, lifetime);
     }
 
+    // Spin the dagger mesh while leaving the projectile collider on its flight path.
     private void Update()
     {
         visual.Rotate(Vector3.back, spinSpeed * Time.deltaTime, Space.Self);
     }
 
+    // Kill the player if hit, then destroy the dagger on any physical collision.
     private void OnCollisionEnter(Collision collision)
     {
         PlayerMovement hitPlayer =

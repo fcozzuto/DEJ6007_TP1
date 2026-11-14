@@ -2,17 +2,19 @@ using UnityEngine;
 
 public class LavaTrapBehavior : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
+    // No startup setup is needed for the lava trigger.
     void Start()
     {
-        
+
     }
 
-    // Update is called once per frame
+    // The lava reacts to trigger entry; there is no per-frame work here.
     void Update()
     {
-        
+
     }
+    // Kill the player on contact with the lava and let the GameManager handle the death delay.
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.CompareTag("Player"))

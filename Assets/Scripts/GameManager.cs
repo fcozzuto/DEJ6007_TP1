@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
     [SerializeField] private GameObject Player;
     [SerializeField] private Animator[] heartAnimators = new Animator[3];
     [SerializeField] private GameObject gameOverUI;
@@ -20,12 +20,14 @@ public class GameManager : MonoBehaviour
     private static int resumeFrame = -1;
     private static bool restartIntoGameplay;
 
+    // Block controls while paused and for the frame in which the menu closes.
     public static bool GameplayInputBlocked =>
         Time.timeScale == 0f || Time.frameCount == resumeFrame;
 
     private Checkpoint activeCheckpoint;
 
     private int lives = 3;
+    // Set the initial spawn, then show the menu or continue directly after a restart.
     private void Start()
     {
         if (startingCheckpoint == null)
@@ -43,6 +45,7 @@ public class GameManager : MonoBehaviour
         Camera.main.GetComponent<SmoothFollow>().SnapToTarget();
 
         resumeFrame = -1;
+        // The flag survives the reload so Retry can skip the title menu.
         if (restartIntoGameplay)
         {
             restartIntoGameplay = false;
@@ -54,13 +57,14 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
+    // Handle menu input and selection, then check for a living player falling out of the level.
     void Update()
     {
         bool menuPressed =
             (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) ||
             (Gamepad.current != null && Gamepad.current.startButton.wasPressedThisFrame);
 
+        // The end screens cannot be dismissed by the normal pause-menu shortcut.
         if (!gameOverUI.activeSelf && !victoryUI.activeSelf)
         {
             if (menuPressed)
@@ -89,6 +93,7 @@ public class GameManager : MonoBehaviour
             playerMovement.Die(1f);
     }
 
+    // Close the submenus and show the main menu with gameplay paused.
     public void OpenMainMenu()
     {
         controlsUI.SetActive(false);
@@ -97,15 +102,18 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 0f;
     }
 
+    // Hide the menu panels and resume gameplay without treating the closing click as a gameplay input.
     public void ResumeGame()
     {
         mainMenuUI.SetActive(false);
         controlsUI.SetActive(false);
         creditsUI.SetActive(false);
         Time.timeScale = 1f;
-        resumeFrame = Time.frameCount; // The closing UI click must not also attack or jump.
+        // Block this frame's UI click or A press so it cannot also attack or jump.
+        resumeFrame = Time.frameCount;
     }
 
+    // Select a visible menu button when the previous selection is missing or belongs to a hidden panel.
     private void SelectMenuButton()
     {
         EventSystem events = EventSystem.current;
@@ -116,12 +124,13 @@ public class GameManager : MonoBehaviour
         if (selected != null && selected.activeInHierarchy)
             return;
 
-        // All your menu panels share the same UI parent.
+        // All panels share the UI parent; this search skips the inactive panels.
         Button button = mainMenuUI.transform.parent.GetComponentInChildren<Button>();
         if (button != null)
             button.Select();
     }
 
+    // Remember the last checkpoint reached, including one revisited while backtracking.
     public void ActivateCheckpoint(Checkpoint checkpoint)
     {
         if (checkpoint == null || checkpoint == activeCheckpoint)
@@ -132,6 +141,7 @@ public class GameManager : MonoBehaviour
         Debug.Log($"Checkpoint activated: {activeCheckpoint.name}");
     }
 
+    // Consume a life, move the player to the active checkpoint, and reset the death zoom.
     private void RespawnPlayer()
     {
         if (activeCheckpoint == null)
@@ -151,11 +161,13 @@ public class GameManager : MonoBehaviour
             zoomBehavior.playerIsDead = false;
     }
 
+    // Wait for the death effect before respawning, or show Game Over if no lives remain.
     public void RespawnWithDelay(float delay)
     {
         if (lives <= 1)
         {
             LoseLife();
+            // Keep time running through the final ragdoll fall instead of freezing the player on impact.
             Invoke(nameof(ShowGameOver), delay);
             return;
         }
@@ -163,20 +175,24 @@ public class GameManager : MonoBehaviour
         Invoke(nameof(RespawnPlayer), delay);
     }
 
+    // Show the Game Over screen after the final death and select a button while the world keeps running.
     private void ShowGameOver()
     {
         gameOverUI.SetActive(true);
         SelectMenuButton();
     }
 
+    // Remove one life and trigger the matching heart animation without going below zero.
     private void LoseLife()
     {
         if (lives <= 0) return;
 
         lives--;
+        // Decrement first: the remaining life count is the index of the heart that was just lost.
         heartAnimators[lives].SetTrigger("Life Lost");
     }
 
+    // Reload the current scene and start the new run directly instead of showing the title menu again.
     public void RestartLevel()
     {
         restartIntoGameplay = true;
@@ -185,11 +201,13 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
+    // Close the built game when the player chooses Exit.
     public void QuitGame()
     {
         Application.Quit();
     }
 
+    // Stop player control, show the Victory screen, and pause the completed game.
     public void WinGame()
     {
         Player.GetComponent<PlayerMovement>().PausePlayerController();

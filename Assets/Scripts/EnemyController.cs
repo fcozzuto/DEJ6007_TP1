@@ -38,6 +38,7 @@ public class EnemyController : MonoBehaviour
 
     public bool IsDead { get; private set; }
 
+    // Cache the enemy components and keep the ragdoll inactive while the enemy is alive.
     private void Awake()
     {
         animator = GetComponent<Animator>();
@@ -46,13 +47,13 @@ public class EnemyController : MonoBehaviour
         SetRagdoll(false);
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    // Remember the starting X position used as one end of the regular patrol route.
     void Start()
     {
         enemyPosition = this.gameObject.transform.position.x;
     }
 
-    // Update is called once per frame
+    // Detect the player and choose between the soldier attack cycle, a Viking charge, or patrol movement.
     void Update()
     {
         if (IsDead)
@@ -72,6 +73,7 @@ public class EnemyController : MonoBehaviour
                 offset.magnitude <= detectionRange;
         }
 
+        // Names containing Viking use the charge behavior; the others use the soldier cycle.
         if (!gameObject.name.Contains("Viking"))
         {
             UpdateSoldier();
@@ -80,7 +82,8 @@ public class EnemyController : MonoBehaviour
 
         if (playerDetected)
         {
-            // Save the patrol position and heading once.
+
+            // Save the return point once at the start of the chase, rather than moving it each frame.
             if (!bossFightEnemy && !patrolInterrupted)
             {
                 patrolResumePosition = transform.position;
@@ -105,6 +108,7 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+    // Move toward the requested position while leaving space around other living enemies.
     private void MoveEnemy(Vector3 displacement)
     {
         float distance = displacement.magnitude;
@@ -115,7 +119,7 @@ public class EnemyController : MonoBehaviour
         Vector3 direction = displacement / distance;
         float allowedDistance = distance;
 
-        // Enemies are moved through their Transforms, so refresh the query positions.
+        // Movement uses Transforms, so refresh the physics positions before checking the next step.
         Physics.SyncTransforms();
 
         RaycastHit[] hits = body.SweepTestAll(
@@ -126,10 +130,11 @@ public class EnemyController : MonoBehaviour
             EnemyController otherEnemy =
                 hit.collider.GetComponentInParent<EnemyController>();
 
-            // Only living enemies block this movement check.
+            // This check only blocks other living enemies, allowing movement past dead bodies.
             if (otherEnemy == null || otherEnemy == this || otherEnemy.IsDead)
                 continue;
 
+            // Hits can arrive out of order, so keep the shortest allowed step and leave a small gap.
             allowedDistance = Mathf.Min(
                 allowedDistance, Mathf.Max(0f, hit.distance - enemyGap));
         }
@@ -137,6 +142,7 @@ public class EnemyController : MonoBehaviour
         transform.position += direction * allowedDistance;
     }
 
+    // Face the player and charge until the Viking reaches its stopping distance.
     private void ChasePlayer()
     {
         Vector3 direction = player.position - transform.position;
@@ -144,7 +150,6 @@ public class EnemyController : MonoBehaviour
 
         float distance = direction.magnitude;
 
-        // Face the player, including when already close enough to stop.
         if (distance > 0.001f)
         {
             transform.rotation = Quaternion.LookRotation(direction);
@@ -164,6 +169,7 @@ public class EnemyController : MonoBehaviour
         MoveEnemy(transform.forward * step);
     }
 
+    // Walk back to the point where the Viking left its patrol and restore the original heading.
     private void ReturnToPatrol()
     {
         Vector3 direction = patrolResumePosition - transform.position;
@@ -191,7 +197,7 @@ public class EnemyController : MonoBehaviour
         }
     }
 
-
+    // Walk a boss-wave enemy toward the player while keeping it at its current height.
     private void ApproachPlayer()
     {
         if (player == null || player.GetComponent<PlayerMovement>().IsDead)
@@ -213,6 +219,7 @@ public class EnemyController : MonoBehaviour
 
         MoveEnemy(nextPosition - transform.position);
     }
+    // Approach the player in boss mode; otherwise walk back and forth along the regular patrol route.
     private void Patrol()
     {
         if (bossFightEnemy)
@@ -220,11 +227,11 @@ public class EnemyController : MonoBehaviour
             ApproachPlayer();
             return;
         }
-        // The enemy will patrol by walking forward between two points, and when it reaches one of the points, it will turn around and walk to the other point
+
         MoveEnemy(transform.forward * (2f * Time.deltaTime));
         animator.Play("Walk");
 
-        // If the enemy reaches the end of the patrol path, it will turn around
+        // Check the heading as well as the position to avoid flipping again on the next frame.
         if (this.gameObject.transform.position.x <= enemyPosition - 10 && transform.forward.x < 0f)
         {
             this.gameObject.transform.Rotate(0, 180, 0);
@@ -236,6 +243,7 @@ public class EnemyController : MonoBehaviour
 
     }
 
+    // Kill the player on contact while this enemy is alive and the player controller is active.
     private void OnTriggerEnter(Collider other)
     {
         if (IsDead)
@@ -253,6 +261,7 @@ public class EnemyController : MonoBehaviour
         playerMovement.Die();
     }
 
+    // Run the soldier through its wait, draw, throw, and sheath animations according to player detection.
     private void UpdateSoldier()
     {
         if (playerDetected && soldierState != SoldierState.Patrol &&
@@ -301,6 +310,8 @@ public class EnemyController : MonoBehaviour
                 {
                     soldierState = SoldierState.Sheath;
                     animator.Play("Base Layer.Soldier Sheat Weapon", 0,
+                        // Start the sheath animation at the matching point when the player leaves during the
+                        // draw.
                         1f - Mathf.Clamp01(animation.normalizedTime));
                 }
                 else if (animation.normalizedTime >= 1f)
@@ -334,6 +345,7 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+    // Leave the soldier attack cycle and resume movement with the saved patrol heading.
     private void ResumeSoldierPatrol()
     {
         soldierState = SoldierState.Patrol;
@@ -341,6 +353,7 @@ public class EnemyController : MonoBehaviour
         Patrol();
     }
 
+    // Spawn and launch a dagger toward the player when the soldier attack animation calls its event.
     public void ThrowDagger()
     {
         if (IsDead
@@ -362,11 +375,13 @@ public class EnemyController : MonoBehaviour
         dagger.Launch(direction, transform);
     }
 
+    // Switch the bone physics and colliders between animated movement and the death ragdoll.
     private void SetRagdoll(bool active)
     {
         foreach (Rigidbody body in ragdollBodies)
         {
-            // The root Rigidbody belongs to the living enemy's collider.
+
+            // Leave the living enemy's root Rigidbody alone; only the bones become dynamic.
             if (body.gameObject == gameObject)
                 continue;
 
@@ -378,6 +393,7 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+    // Stop the enemy, enable its ragdoll, and remove the body after two seconds.
     public void Die()
     {
         if (IsDead)

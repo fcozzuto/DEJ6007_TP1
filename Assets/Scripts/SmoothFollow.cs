@@ -23,6 +23,7 @@ public class SmoothFollow : MonoBehaviour
     private float currentViewYaw;
     private float targetViewYaw;
 
+    // Give movement the same horizontal orientation as the selected camera view.
     public Quaternion MovementRotation => Quaternion.Euler(0f, targetViewYaw, 0f);
 
     private bool behindPlayerViewActive;
@@ -30,12 +31,14 @@ public class SmoothFollow : MonoBehaviour
     private float savedSideYaw;
     private float savedSideNearClip;
 
+    // Pause player control until the camera is close to its new position and rotation.
     public void WaitForCamera(PlayerMovement player)
     {
         playerWaitingForCamera = player;
         player.PausePlayerController();
     }
 
+    // Switch between the centered, reversed boss-room view and the normal side-scrolling view.
     public void SetBossRoomView(bool useBossView, PlayerMovement player)
     {
         if (behindPlayerViewActive)
@@ -46,15 +49,16 @@ public class SmoothFollow : MonoBehaviour
 
         if (useBossView)
         {
-            // Change default plane clipping settings
+
             followCamera.nearClipPlane = 3f;
+            // Keep the normal view separate from the view saved when entering the ending corridor.
             savedRoomOffset = offset;
             offset.x = 0f;
             targetViewYaw = 180f;
         }
         else
         {
-            // Restore default plane clipping settings
+
             followCamera.nearClipPlane = 4.1f;
             offset = savedRoomOffset;
             targetViewYaw = 0f;
@@ -64,6 +68,7 @@ public class SmoothFollow : MonoBehaviour
         WaitForCamera(player);
     }
 
+    // Switch to the rear view for the exit corridor, or restore the side view saved before entering it.
     public void SetBehindPlayerView(bool useBehindView, PlayerMovement player)
     {
         if (behindPlayerViewActive == useBehindView)
@@ -71,13 +76,15 @@ public class SmoothFollow : MonoBehaviour
 
         if (useBehindView)
         {
-            // Save the side view, including the boss room's reversed camera angle.
+
+            // Save the angle and near plane too, since the previous view may be the boss-room view.
             savedSideOffset = offset;
             savedSideYaw = targetViewYaw;
             savedSideNearClip = followCamera.nearClipPlane;
 
             offset = behindPlayerOffset;
-            targetViewYaw = 90f; // Look along the exit corridor, relative to the Player root.
+            // This quarter turn looks down the exit corridor relative to the Player root.
+            targetViewYaw = 90f;
             followCamera.nearClipPlane = 0.3f;
         }
         else
@@ -91,6 +98,7 @@ public class SmoothFollow : MonoBehaviour
         WaitForCamera(player);
     }
 
+    // Cache the camera components and remember the initial rotation relative to the Player root.
     private void Awake()
     {
         zoomBehavior = GetComponent<ZoomBehavior>();
@@ -98,11 +106,13 @@ public class SmoothFollow : MonoBehaviour
 
         if (target != null)
         {
+            // Remove the root rotation to keep the camera's original tilt as a relative offset.
             rotationOffset = Quaternion.Inverse(target.rotation)
                 * transform.rotation;
         }
     }
 
+    // Follow the player or ragdoll, blend views, and restore control when the camera settles.
     private void LateUpdate()
     {
         if (target == null)
@@ -110,7 +120,7 @@ public class SmoothFollow : MonoBehaviour
 
         bool isDead = zoomBehavior != null && zoomBehavior.playerIsDead;
 
-        // Respawning outside the arena restores the normal side view and controls.
+        // Returning from dead to alive means a respawn outside the arena; restore the normal view.
         if (!isDead && wasDead)
         {
             PlayerMovement player = target.GetComponent<PlayerMovement>();
@@ -124,6 +134,7 @@ public class SmoothFollow : MonoBehaviour
 
         if (isDead && !wasDead && ragdollTarget != null)
         {
+            // Keep the bone-to-root offset from death so following the ragdoll does not cause a jump.
             deathPositionOffset =
                 ragdollTarget.position - target.position;
         }
@@ -137,7 +148,7 @@ public class SmoothFollow : MonoBehaviour
 
         float blend = smoothSpeed * Time.deltaTime;
 
-        // Turn the offset gradually to take the camera around the player.
+        // Turn the offset around the player so the camera does not cut straight through them.
         currentViewYaw = Mathf.LerpAngle(currentViewYaw, targetViewYaw, blend);
         Quaternion viewTurn = Quaternion.Euler(0f, currentViewYaw, 0f);
 
@@ -153,7 +164,7 @@ public class SmoothFollow : MonoBehaviour
         transform.rotation = Quaternion.Lerp(
             transform.rotation, desiredRotation, blend);
 
-        // Resume against the final destination, rather than an intermediate pose.
+        // Use the final view for the arrival check so control does not resume halfway through.
         Quaternion finalViewTurn = Quaternion.Euler(0f, targetViewYaw, 0f);
         Vector3 finalPosition =
             followPosition + target.TransformDirection(finalViewTurn * offset);
@@ -170,6 +181,7 @@ public class SmoothFollow : MonoBehaviour
         }
     }
 
+    // Snap to the selected view at the starting spawn so the camera does not slide into place.
     public void SnapToTarget()
     {
         if (target == null)

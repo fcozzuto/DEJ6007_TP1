@@ -8,12 +8,14 @@ public class FireActivator : MonoBehaviour
 
     private bool isLit;
 
+    // Hide the flame so the torch or brazier starts unlit.
     private void Awake()
     {
         if (fireEffect != null)
             fireEffect.SetActive(false);
     }
 
+    // Light the object once and open its gate; the lava-room brazier also raises the hidden platform.
     public void Ignite()
     {
         if (isLit)
