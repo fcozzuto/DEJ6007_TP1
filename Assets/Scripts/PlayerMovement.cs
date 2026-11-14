@@ -43,6 +43,9 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
+        if (GameManager.GameplayInputBlocked)
+            return;
+
         if (IsDead || !controller.enabled)
             return;
 
@@ -146,6 +149,15 @@ public class PlayerMovement : MonoBehaviour
 
         animator.CrossFadeInFixedTime(stateName, 0.15f);
         currentAnimation = stateName;
+    }
+
+    public void RotateForCamera(float angle)
+    {
+        Quaternion visualRotation = characterVisual.rotation;
+
+        transform.Rotate(0f, angle, 0f);
+
+        characterVisual.rotation = visualRotation;
     }
 
     public void RespawnAt(Vector3 position, Quaternion facingRotation)

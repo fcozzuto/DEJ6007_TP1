@@ -56,6 +56,9 @@ public class PlayerAttack : MonoBehaviour
 
     private void Update()
     {
+        if (GameManager.GameplayInputBlocked)
+            return;
+
         if (movement.IsDead || !controller.enabled)
             return;
 
