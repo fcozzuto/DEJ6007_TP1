@@ -10,6 +10,8 @@ public class SmoothFollow : MonoBehaviour
 
     public Quaternion rotationOffset;
     private ZoomBehavior zoomBehavior;
+    private Camera followCamera;
+    [SerializeField] private Vector3 behindPlayerOffset = new Vector3(0f, 3f, -5f);
 
     private bool wasDead;
     private Vector3 deathPositionOffset;
@@ -21,6 +23,13 @@ public class SmoothFollow : MonoBehaviour
     private float currentViewYaw;
     private float targetViewYaw;
 
+    public Quaternion MovementRotation => Quaternion.Euler(0f, targetViewYaw, 0f);
+
+    private bool behindPlayerViewActive;
+    private Vector3 savedSideOffset;
+    private float savedSideYaw;
+    private float savedSideNearClip;
+
     public void WaitForCamera(PlayerMovement player)
     {
         playerWaitingForCamera = player;
@@ -29,13 +38,16 @@ public class SmoothFollow : MonoBehaviour
 
     public void SetBossRoomView(bool useBossView, PlayerMovement player)
     {
+        if (behindPlayerViewActive)
+            SetBehindPlayerView(false, player);
+
         if (bossRoomViewActive == useBossView)
             return;
 
         if (useBossView)
         {
             // Change default plane clipping settings
-            gameObject.GetComponent<Camera>().nearClipPlane = 3f;
+            followCamera.nearClipPlane = 3f;
             savedRoomOffset = offset;
             offset.x = 0f;
             targetViewYaw = 180f;
@@ -43,7 +55,7 @@ public class SmoothFollow : MonoBehaviour
         else
         {
             // Restore default plane clipping settings
-            gameObject.GetComponent<Camera>().nearClipPlane = 4.1f;
+            followCamera.nearClipPlane = 4.1f;
             offset = savedRoomOffset;
             targetViewYaw = 0f;
         }
@@ -52,9 +64,37 @@ public class SmoothFollow : MonoBehaviour
         WaitForCamera(player);
     }
 
+    public void SetBehindPlayerView(bool useBehindView, PlayerMovement player)
+    {
+        if (behindPlayerViewActive == useBehindView)
+            return;
+
+        if (useBehindView)
+        {
+            // Save the side view, including the boss room's reversed camera angle.
+            savedSideOffset = offset;
+            savedSideYaw = targetViewYaw;
+            savedSideNearClip = followCamera.nearClipPlane;
+
+            offset = behindPlayerOffset;
+            targetViewYaw = 90f; // Look along the exit corridor, relative to the Player root.
+            followCamera.nearClipPlane = 0.3f;
+        }
+        else
+        {
+            offset = savedSideOffset;
+            targetViewYaw = savedSideYaw;
+            followCamera.nearClipPlane = savedSideNearClip;
+        }
+
+        behindPlayerViewActive = useBehindView;
+        WaitForCamera(player);
+    }
+
     private void Awake()
     {
         zoomBehavior = GetComponent<ZoomBehavior>();
+        followCamera = GetComponent<Camera>();
 
         if (target != null)
         {
@@ -70,9 +110,17 @@ public class SmoothFollow : MonoBehaviour
 
         bool isDead = zoomBehavior != null && zoomBehavior.playerIsDead;
 
-        // A failed fight respawns the player outside the arena.
-        if (!isDead && wasDead && bossRoomViewActive)
-            SetBossRoomView(false, target.GetComponent<PlayerMovement>());
+        // Respawning outside the arena restores the normal side view and controls.
+        if (!isDead && wasDead)
+        {
+            PlayerMovement player = target.GetComponent<PlayerMovement>();
+
+            if (behindPlayerViewActive)
+                SetBehindPlayerView(false, player);
+
+            if (bossRoomViewActive)
+                SetBossRoomView(false, player);
+        }
 
         if (isDead && !wasDead && ragdollTarget != null)
         {

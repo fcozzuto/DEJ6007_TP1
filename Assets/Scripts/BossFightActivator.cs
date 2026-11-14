@@ -8,12 +8,15 @@ public class BossFightActivator : MonoBehaviour
     [SerializeField] private Animator exitGateAnimator;
     [SerializeField] private PlayerMovement player;
     [SerializeField] private GameObject[] waves = new GameObject[0];
+    [SerializeField] private Light exitLight;
+    [SerializeField] private GameObject endGameCameraTrigger;
 
     private List<GameObject> spawnedWaves = new List<GameObject>();
     private EnemyController[] currentWaveEnemies;
     private int currentWaveIndex = -1;
     private bool isLit;
     private bool fightComplete;
+    private TriggerCameraBehindPlayer endCameraTrigger;
 
     public int RemainingEnemies { get; private set; }
 
@@ -21,6 +24,12 @@ public class BossFightActivator : MonoBehaviour
     {
         if (fireEffect != null)
             fireEffect.SetActive(false);
+
+        if (endGameCameraTrigger != null)
+            endCameraTrigger = endGameCameraTrigger.GetComponent<TriggerCameraBehindPlayer>();
+
+        if (endCameraTrigger != null)
+            endCameraTrigger.SetUnlocked(false);
 
         foreach (GameObject wave in waves)
         {
@@ -35,9 +44,10 @@ public class BossFightActivator : MonoBehaviour
             return;
 
         if (fireEffect == null || gateAnimator == null ||
-            exitGateAnimator == null || player == null || waves.Length == 0)
+            exitGateAnimator == null || player == null || waves.Length == 0 ||
+            exitLight == null || endCameraTrigger == null)
         {
-            Debug.LogError("Assign the fire, gates, player, and waves.", this);
+            Debug.LogError("Assign the fire, gates, player, waves, exit light, and end-game camera trigger.", this);
             return;
         }
 
@@ -88,6 +98,8 @@ public class BossFightActivator : MonoBehaviour
             fightComplete = true;
             gateAnimator.Play("Base Layer.Gate motion", 0, 0f);
             exitGateAnimator.Play("Base Layer.Exit Gate motion", 0, 0f);
+            exitLight.gameObject.SetActive(true);
+            endCameraTrigger.SetUnlocked(true);
             Debug.Log("All boss waves defeated.", this);
             return;
         }
@@ -122,5 +134,7 @@ public class BossFightActivator : MonoBehaviour
 
         spawnedWaves.Clear();
         gateAnimator.Play("Base Layer.Gate motion", 0, 0f);
+        exitLight.gameObject.SetActive(false);
+        endCameraTrigger.SetUnlocked(false);
     }
 }

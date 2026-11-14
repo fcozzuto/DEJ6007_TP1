@@ -62,8 +62,8 @@ public class PlayerMovement : MonoBehaviour
 
         Vector3 movement = new Vector3(input.x, 0f, input.y);
 
-        if (cameraFollow.BossRoomViewActive)
-            movement = -movement;
+        // Match movement to the selected camera angle: side, boss room, or rear view.
+        movement = cameraFollow.MovementRotation * movement;
 
         bool isRunning = sprintAction.IsPressed();
 

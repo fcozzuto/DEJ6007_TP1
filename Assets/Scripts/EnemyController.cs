@@ -33,12 +33,15 @@ public class EnemyController : MonoBehaviour
     private Vector3 patrolResumePosition;
     private Quaternion patrolResumeRotation;
     private Rigidbody[] ragdollBodies;
+    private Rigidbody body;
+    [SerializeField, Min(0f)] private float enemyGap = 0.1f;
 
     public bool IsDead { get; private set; }
 
     private void Awake()
     {
         animator = GetComponent<Animator>();
+        body = GetComponent<Rigidbody>();
         ragdollBodies = GetComponentsInChildren<Rigidbody>(true);
         SetRagdoll(false);
     }
@@ -102,6 +105,38 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+    private void MoveEnemy(Vector3 displacement)
+    {
+        float distance = displacement.magnitude;
+
+        if (distance <= 0.000001f)
+            return;
+
+        Vector3 direction = displacement / distance;
+        float allowedDistance = distance;
+
+        // Enemies are moved through their Transforms, so refresh the query positions.
+        Physics.SyncTransforms();
+
+        RaycastHit[] hits = body.SweepTestAll(
+            direction, distance + enemyGap, QueryTriggerInteraction.Ignore);
+
+        foreach (RaycastHit hit in hits)
+        {
+            EnemyController otherEnemy =
+                hit.collider.GetComponentInParent<EnemyController>();
+
+            // Only living enemies block this movement check.
+            if (otherEnemy == null || otherEnemy == this || otherEnemy.IsDead)
+                continue;
+
+            allowedDistance = Mathf.Min(
+                allowedDistance, Mathf.Max(0f, hit.distance - enemyGap));
+        }
+
+        transform.position += direction * allowedDistance;
+    }
+
     private void ChasePlayer()
     {
         Vector3 direction = player.position - transform.position;
@@ -126,7 +161,7 @@ public class EnemyController : MonoBehaviour
         animator.Play("Viking Charge");
 
         float step = Mathf.Min(chaseSpeed * Time.deltaTime, distanceToWalk);
-        transform.Translate(Vector3.forward * step);
+        MoveEnemy(transform.forward * step);
     }
 
     private void ReturnToPatrol()
@@ -139,10 +174,12 @@ public class EnemyController : MonoBehaviour
             transform.rotation = Quaternion.LookRotation(direction);
         }
 
-        transform.position = Vector3.MoveTowards(
+        Vector3 nextPosition = Vector3.MoveTowards(
             transform.position,
             patrolResumePosition,
             2f * Time.deltaTime);
+
+        MoveEnemy(nextPosition - transform.position);
 
         animator.Play("Walk");
 
@@ -171,8 +208,10 @@ public class EnemyController : MonoBehaviour
             transform.rotation = Quaternion.LookRotation(direction);
 
         animator.Play("Walk");
-        transform.position = Vector3.MoveTowards(
+        Vector3 nextPosition = Vector3.MoveTowards(
             transform.position, destination, approachSpeed * Time.deltaTime);
+
+        MoveEnemy(nextPosition - transform.position);
     }
     private void Patrol()
     {
@@ -182,7 +221,7 @@ public class EnemyController : MonoBehaviour
             return;
         }
         // The enemy will patrol by walking forward between two points, and when it reaches one of the points, it will turn around and walk to the other point
-        this.gameObject.transform.Translate(Vector3.forward * Time.deltaTime * 2);
+        MoveEnemy(transform.forward * (2f * Time.deltaTime));
         animator.Play("Walk");
 
         // If the enemy reaches the end of the patrol path, it will turn around
