@@ -18,6 +18,12 @@ public class PlayerAttack : MonoBehaviour
     [SerializeField] private float secondAttackHeight = 2f;
     [SerializeField] private Fireball fireballPrefab;
     [SerializeField] private Transform fireballSpawn;
+    [SerializeField] private AudioClip swordSwingSound;
+    [SerializeField] private AudioClip swordDraw;
+    [SerializeField] private AudioClip swordSheath;
+    [SerializeField] private AudioClip footStepSound;
+    [SerializeField] private AudioSource audioSource;
+
 
     private InputAction fireballAction;
     private bool fireballReleased;
@@ -171,6 +177,17 @@ public class PlayerAttack : MonoBehaviour
         phase = next;
         activeState = "Base Layer." + stateName;
         animator.CrossFadeInFixedTime(activeState, 0.08f, 0, 0f);
+        if (audioSource != null)
+        {
+            if (next == Phase.Drawing)
+                audioSource.PlayOneShot(swordDraw);
+            else if (next == Phase.Sheathing)
+                audioSource.PlayOneShot(swordSheath);
+        }
+        else
+        {
+            Debug.LogWarning("AudioSource is not assigned in PlayerAttack script.");
+        }
     }
 
     // Remember the direction of the swing before starting its animation.
@@ -226,6 +243,11 @@ public class PlayerAttack : MonoBehaviour
     {
         blade.enabled = SwordDrawn &&
             (phase == Phase.First || phase == Phase.Second);
+
+        if (blade.enabled && audioSource != null)
+        {
+            audioSource.PlayOneShot(swordSwingSound);
+        }
     }
 
     // Disable blade damage between attack windows.
@@ -321,5 +343,15 @@ public class PlayerAttack : MonoBehaviour
     {
         SetSwordDrawn(SwordDrawn);
         WaitWithSwordDrawn(Phase.Ready);
+    }
+
+    // Play a footstep at ground contact, skipping airborne or interrupted movement.
+    public void Footstep()
+    {
+        if (GameManager.GameplayInputBlocked || movement.IsDead || IsBusy ||
+            !controller.enabled || !controller.isGrounded)
+            return;
+
+        audioSource?.PlayOneShot(footStepSound);
     }
 }

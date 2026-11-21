@@ -4,6 +4,8 @@ using UnityEngine;
 public class ButtonBehavior : MonoBehaviour
 {
     [SerializeField] private Animator platformsAnimator;
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip buttonPressSound;
 
     // No startup setup is needed for these floor buttons.
     void Start()
@@ -22,6 +24,7 @@ public class ButtonBehavior : MonoBehaviour
 
         if (other.gameObject.CompareTag("Player"))
         {
+            audioSource?.PlayOneShot(buttonPressSound);
             Debug.Log("Button pressed!");
 
             if (this.gameObject.name == "Button Hidden Platforms")

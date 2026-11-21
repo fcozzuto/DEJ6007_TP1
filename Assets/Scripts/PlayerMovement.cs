@@ -11,6 +11,9 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private Transform characterVisual;
     [SerializeField] private float turnSpeed = 12f;
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip jumpSound;
+    [SerializeField] private AudioClip deathSound;
 
     private CharacterController controller;
     private float verticalSpeed;
@@ -54,6 +57,10 @@ public class PlayerMovement : MonoBehaviour
 
         if (controller.isGrounded && verticalSpeed <= 0f)
         {
+            // Ground contact after a jump marks the landing.
+            if (jumpsUsed > 0)
+                combat?.Footstep();
+
             // A small downward push keeps the CharacterController grounded between frames.
             verticalSpeed = -2f;
             jumpsUsed = 0;
@@ -117,6 +124,7 @@ public class PlayerMovement : MonoBehaviour
             // Convert jump height to takeoff speed using the current gravity.
             verticalSpeed = Mathf.Sqrt(jumpHeight * -2f * gravity);
             jumpsUsed++;
+            audioSource?.PlayOneShot(jumpSound);
 
             // Clear the cached state so the second jump can restart the same clip.
             currentAnimation = null;
@@ -221,6 +229,7 @@ public class PlayerMovement : MonoBehaviour
             return;
 
         IsDead = true;
+        audioSource?.PlayOneShot(deathSound);
         combat?.ResetCombat();
         // The ragdoll bones can take over once the Animator stops driving the skeleton.
         animator.enabled = false;

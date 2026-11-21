@@ -16,7 +16,13 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject mainMenuUI;
     [SerializeField] private GameObject controlsUI;
     [SerializeField] private GameObject creditsUI;
+    [SerializeField] private AudioSource musicSource;
+    [SerializeField] private AudioClip menuMusic;
+    [SerializeField] private AudioClip creditsMusic;
+    [SerializeField] private AudioClip gameplayMusic;
+    [SerializeField] private AudioClip uiButton;
 
+    private static AudioSource uiAudioSource;
     private static int resumeFrame = -1;
     private static bool restartIntoGameplay;
 
@@ -30,6 +36,10 @@ public class GameManager : MonoBehaviour
     // Set the initial spawn, then show the menu or continue directly after a restart.
     private void Start()
     {
+        // Keep menu and credits music playing while gameplay audio is paused.
+        if (musicSource != null)
+            musicSource.ignoreListenerPause = true;
+
         if (startingCheckpoint == null)
         {
             Debug.LogError("Assign a starting checkpoint on GameManager.");
@@ -54,12 +64,14 @@ public class GameManager : MonoBehaviour
         else
         {
             OpenMainMenu();
+            StartCoroutine(InitializeMenuAudio());
         }
     }
 
     // Handle menu input and selection, then check for a living player falling out of the level.
     void Update()
     {
+        UpdateMusic();
         bool menuPressed =
             (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) ||
             (Gamepad.current != null && Gamepad.current.startButton.wasPressedThisFrame);
@@ -100,6 +112,7 @@ public class GameManager : MonoBehaviour
         creditsUI.SetActive(false);
         mainMenuUI.SetActive(true);
         Time.timeScale = 0f;
+        AudioListener.pause = true;
     }
 
     // Hide the menu panels and resume gameplay without treating the closing click as a gameplay input.
@@ -109,6 +122,7 @@ public class GameManager : MonoBehaviour
         controlsUI.SetActive(false);
         creditsUI.SetActive(false);
         Time.timeScale = 1f;
+        AudioListener.pause = false;
         // Block this frame's UI click or A press so it cannot also attack or jump.
         resumeFrame = Time.frameCount;
     }
@@ -215,5 +229,70 @@ public class GameManager : MonoBehaviour
         victoryUI.SetActive(true);
 
         Time.timeScale = 0f;
+        AudioListener.pause = true;
+    }
+
+    // Match the music to the visible menu, or use the gameplay track when all menus are closed.
+    private void UpdateMusic()
+    {
+        if (musicSource == null)
+            return;
+
+        AudioClip nextMusic = gameplayMusic;
+
+        if (creditsUI.activeInHierarchy)
+            nextMusic = creditsMusic;
+        else if (mainMenuUI.activeInHierarchy || controlsUI.activeInHierarchy)
+            nextMusic = menuMusic;
+
+        // Let the current track continue instead of restarting it every frame.
+        if (musicSource.clip == nextMusic)
+            return;
+
+        musicSource.Stop();
+        musicSource.clip = nextMusic;
+
+        if (nextMusic != null)
+            musicSource.Play();
+    }
+
+    // Play a confirmation click while menus are paused and across scene reloads.
+    public void PlayUiClick()
+    {
+        if (uiButton == null)
+            return;
+
+        // Keep one source between scenes so Retry does not cut off the click.
+        if (uiAudioSource == null)
+        {
+            GameObject soundObject = new GameObject("UI Click Audio");
+            DontDestroyOnLoad(soundObject);
+
+            uiAudioSource = soundObject.AddComponent<AudioSource>();
+            uiAudioSource.playOnAwake = false;
+            uiAudioSource.loop = false;
+            uiAudioSource.spatialBlend = 0f;
+            uiAudioSource.volume = 0.4f;
+            uiAudioSource.ignoreListenerPause = true;
+            uiAudioSource.priority = 0;
+        }
+
+        uiAudioSource.PlayOneShot(uiButton);
+    }
+
+    // Initialize audio silently before restoring menu playback.
+    private System.Collections.IEnumerator InitializeMenuAudio()
+    {
+        float previousVolume = AudioListener.volume;
+
+        AudioListener.volume = 0f;
+        AudioListener.pause = false;
+
+        yield return null;
+
+        if (Time.timeScale == 0f)
+            AudioListener.pause = true;
+
+        AudioListener.volume = previousVolume;
     }
 }

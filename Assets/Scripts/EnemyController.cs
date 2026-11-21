@@ -28,6 +28,9 @@ public class EnemyController : MonoBehaviour
     [SerializeField] private float approachSpeed = 2f;
     [SerializeField] private FlyingDagger daggerPrefab;
     [SerializeField] private MeshRenderer heldDagger;
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip deathSound;
+    [SerializeField] private AudioClip footStepSound;
 
     private bool patrolInterrupted = false;
     private Vector3 patrolResumePosition;
@@ -400,6 +403,7 @@ public class EnemyController : MonoBehaviour
             return;
 
         IsDead = true;
+        audioSource?.PlayOneShot(deathSound);
         animator.enabled = false;
 
         foreach (Collider rootCollider in GetComponents<Collider>())
@@ -409,5 +413,14 @@ public class EnemyController : MonoBehaviour
         SetRagdoll(true);
 
         Destroy(gameObject, 2f);
+    }
+
+    // Play a footstep from the walking or charging animation while the enemy is alive.
+    public void Footstep()
+    {
+        if (IsDead || GameManager.GameplayInputBlocked)
+            return;
+
+        audioSource?.PlayOneShot(footStepSound);
     }
 }
