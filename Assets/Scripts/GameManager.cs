@@ -73,7 +73,8 @@ public class GameManager : MonoBehaviour
     {
         UpdateMusic();
         bool menuPressed =
-            (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) ||
+            (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) || 
+            (Keyboard.current != null && Keyboard.current.pKey.wasPressedThisFrame) ||
             (Gamepad.current != null && Gamepad.current.startButton.wasPressedThisFrame);
 
         // The end screens cannot be dismissed by the normal pause-menu shortcut.
